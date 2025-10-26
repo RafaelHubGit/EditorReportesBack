@@ -1,19 +1,27 @@
 import { JSONScalar } from '../scalars/JSON';
-
-import { queries } from './queries/index';
-import { mutations } from './mutations/index';
-import { typeResolvers } from './types/index';
+import { templateResolvers } from './template.resolvers';
+import { folderResolvers } from './folder.resolvers';
+import { userResolvers } from './user.resolvers';
 
 export const resolvers = {
-    // Scalars
+    // Scalars PRIMERO
     JSON: JSONScalar,
 
-    // Queries
-    Query: queries,
+    // Query y Mutation
+    Query: {
+        ...templateResolvers.Query,
+        ...folderResolvers.Query, 
+        ...userResolvers.Query,
+    },
 
-    // Mutations
-    Mutation: mutations,
+    Mutation: {
+        ...templateResolvers.Mutation,
+        ...folderResolvers.Mutation,
+        ...userResolvers.Mutation,
+    },
 
-    // Field resolvers
-    ...typeResolvers,
+    // Field resolvers AL FINAL
+    ...templateResolvers.Template ? { Template: templateResolvers.Template } : {},
+    ...folderResolvers.Folder ? { Folder: folderResolvers.Folder } : {},
+    ...userResolvers.User ? { User: userResolvers.User } : {},
 };

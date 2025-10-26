@@ -44,7 +44,10 @@ input TemplateUpdateInput {
 
 extend type Query {
     # Templates
-    templates: [Template!]!
+    testQuery: [Template!]!
+    allTemplates: [Template]!
+    templatesByUser: [Template!]!
+    templatesByIdAndUserId(id: ID!): Template
     template(id: ID!): Template
     templatesByFolder(folderId: ID!): [Template!]!
     rootTemplates: [Template!]!

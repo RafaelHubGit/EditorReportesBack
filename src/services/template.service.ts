@@ -1,41 +1,77 @@
-import { Template } from '../models/Template.model';
+
 import { ITemplate } from '../types/mongo.types';
+import { Template } from '../models/Template.model';
 
 export class TemplateService {
     // Crear un nuevo template
     static async createTemplate(templateData: Partial<ITemplate>): Promise<ITemplate> {
         try {
-        const template = new Template(templateData);
-        return await template.save();
+            const template = new Template(templateData);
+            return await template.save();
         } catch (error) {
-        throw new Error(`Error creating template: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error creating template: ${message}`);
+        }
+    }
+
+    // Obtener all templates 
+    static async getAllTemplates(): Promise<ITemplate[]> {
+        try {
+            console.log("🟢 [getAllTemplates] EJECUTANDO...");
+            
+            const templates = await Template.find().exec();
+            
+            console.log("📦 Templates encontrados:", templates);
+            console.log("🔢 Número de templates:", templates?.length || 0);
+            console.log("📝 Tipo de templates:", typeof templates);
+            console.log("🔍 Es array?:", Array.isArray(templates));
+            
+            if (!templates) {
+                console.log("❌ templates es NULL o UNDEFINED");
+                return []; // ← Nunca retornes null
+            }
+            
+            if (templates.length === 0) {
+                console.log("ℹ️  No hay templates, retornando array vacío");
+                return [];
+            }
+            
+            console.log("✅ Retornando templates:", templates.length);
+            return templates;
+        } catch (error) {
+            console.error("🔴 ERROR en getAllTemplates:", error);
+            // console.error("Stack:", error.stack);
+            // Nunca retornes null, siempre retorna array vacío
+            return [];
         }
     }
 
     // Obtener templates por usuario
     static async getTemplatesByUser(userId: string): Promise<ITemplate[]> {
         try {
-        return await Template.find({ owner: userId })
-            .sort({ createdAt: -1 })
-            .exec();
+            return await Template.find({ owner: userId })
+                .sort({ createdAt: -1 })
+                .exec();
         } catch (error) {
-        throw new Error(`Error fetching templates: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error fetching templates: ${message}`);
         }
     }
 
-    // Obtener template por ID
-    static async getTemplateById(templateId: string, userId: string): Promise<ITemplate | null> {
+    // Obtener template por ID y usuario ID 
+    static async getTemplateByIdAndUserId(templateId: string, userId: string): Promise<ITemplate | null> {
         try {
-        return await Template.findOne({
-            _id: templateId,
-            $or: [
-            { owner: userId },
-            { 'access.sharedWith': userId },
-            { 'access.isPublic': true }
-            ]
-        }).exec();
+            return await Template.findOne({
+                _id: templateId,
+                $or: [
+                { owner: userId },
+                { 'access.sharedWith': userId },
+                { 'access.isPublic': true }
+                ]
+            }).exec();
         } catch (error) {
-        throw new Error(`Error fetching template: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error fetching template: ${message}`);
         }
     }
 
@@ -46,33 +82,35 @@ export class TemplateService {
         updateData: Partial<ITemplate>
     ): Promise<ITemplate | null> {
         try {
-        return await Template.findOneAndUpdate(
-            { 
-            _id: templateId, 
-            owner: userId  // Solo el owner puede actualizar
-            },
-            { 
-            ...updateData,
-            version: { $inc: 1 }  // Incrementar versión
-            },
-            { new: true, runValidators: true }
-        ).exec();
+            return await Template.findOneAndUpdate(
+                { 
+                _id: templateId, 
+                owner: userId  // Solo el owner puede actualizar
+                },
+                { 
+                ...updateData,
+                version: { $inc: 1 }  // Incrementar versión
+                },
+                { new: true, runValidators: true }
+            ).exec();
         } catch (error) {
-        throw new Error(`Error updating template: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error updating template: ${message}`);
         }
     }
 
     // Eliminar template
     static async deleteTemplate(templateId: string, userId: string): Promise<boolean> {
         try {
-        const result = await Template.deleteOne({
-            _id: templateId,
-            owner: userId  // Solo el owner puede eliminar
-        }).exec();
-        
-        return result.deletedCount > 0;
+            const result = await Template.deleteOne({
+                _id: templateId,
+                owner: userId  // Solo el owner puede eliminar
+            }).exec();
+            
+            return result.deletedCount > 0;
         } catch (error) {
-        throw new Error(`Error deleting template: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error deleting template: ${message}`);
         }
     }
 
@@ -83,27 +121,28 @@ export class TemplateService {
         tags?: string[]
     ): Promise<ITemplate[]> {
         try {
-        const query: any = {
-            $or: [
-            { owner: userId },
-            { 'access.sharedWith': userId },
-            { 'access.isPublic': true }
-            ]
-        };
+            const query: any = {
+                $or: [
+                { owner: userId },
+                { 'access.sharedWith': userId },
+                { 'access.isPublic': true }
+                ]
+            };
 
-        if (searchTerm) {
-            query.name = { $regex: searchTerm, $options: 'i' };
-        }
+            if (searchTerm) {
+                query.name = { $regex: searchTerm, $options: 'i' };
+            }
 
-        if (tags && tags.length > 0) {
-            query.tags = { $in: tags };
-        }
+            if (tags && tags.length > 0) {
+                query.tags = { $in: tags };
+            }
 
-        return await Template.find(query)
-            .sort({ createdAt: -1 })
-            .exec();
+            return await Template.find(query)
+                .sort({ createdAt: -1 })
+                .exec();
         } catch (error) {
-        throw new Error(`Error searching templates: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error searching templates: ${message}`);
         }
     }
 
@@ -111,32 +150,34 @@ export class TemplateService {
     // Obtener templates por folder
     static async getTemplatesByFolder(folderId: string, userId: string): Promise<ITemplate[]> {
         try {
-        return await Template.find({
-            folderId: folderId,
-            $or: [
-            { owner: userId },
-            { 'access.sharedWith': userId },
-            { 'access.isPublic': true }
-            ]
-        })
-        .sort({ createdAt: -1 })
-        .exec();
+            return await Template.find({
+                folderId: folderId,
+                $or: [
+                { owner: userId },
+                { 'access.sharedWith': userId },
+                { 'access.isPublic': true }
+                ]
+            })
+            .sort({ createdAt: -1 })
+            .exec();
         } catch (error) {
-        throw new Error(`Error fetching folder templates: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error fetching folder templates: ${message}`);
         }
     }
 
     // Obtener templates sin folder (root)
     static async getRootTemplates(userId: string): Promise<ITemplate[]> {
         try {
-        return await Template.find({
-            owner: userId,
-            folderId: { $exists: false }
-        })
-        .sort({ createdAt: -1 })
-        .exec();
+            return await Template.find({
+                owner: userId,
+                folderId: { $exists: false }
+            })
+            .sort({ createdAt: -1 })
+            .exec();
         } catch (error) {
-        throw new Error(`Error fetching root templates: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error fetching root templates: ${message}`);
         }
     }
 
@@ -148,19 +189,20 @@ export class TemplateService {
         isPublic: boolean = false
     ): Promise<ITemplate | null> {
         try {
-        return await Template.findOneAndUpdate(
-            { 
-            _id: templateId, 
-            owner: userId  // Solo el owner puede compartir
-            },
-            {
-            $addToSet: { 'access.sharedWith': { $each: targetUserIds } },
-            'access.isPublic': isPublic
-            },
-            { new: true, runValidators: true }
-        ).exec();
+            return await Template.findOneAndUpdate(
+                { 
+                _id: templateId, 
+                owner: userId  // Solo el owner puede compartir
+                },
+                {
+                $addToSet: { 'access.sharedWith': { $each: targetUserIds } },
+                'access.isPublic': isPublic
+                },
+                { new: true, runValidators: true }
+            ).exec();
         } catch (error) {
-        throw new Error(`Error sharing template: ${error.message}`);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error sharing template: ${message}`);
         }
     }
 }

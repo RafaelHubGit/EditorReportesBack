@@ -23,3 +23,12 @@ type User {
     name: String!
     createdAt: String!
 }
+
+# DEFINIR LOS TIPOS BASE
+type Query {
+    _empty: String
+}
+
+type Mutation {
+    _empty: String
+}
