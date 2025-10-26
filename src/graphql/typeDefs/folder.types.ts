@@ -1,0 +1,57 @@
+import { gql } from 'graphql-tag';
+
+export const folderTypeDefs = gql`
+    type Folder {
+        id: ID!
+        name: String!
+        description: String
+        owner: ID!
+        parent: Folder
+        parentId: ID
+        templates: [Template!]!
+        templateCount: Int!
+        icon: String
+        color: String
+        isShared: Boolean!
+        sharedWith: [ID!]!
+        subfolders: [Folder!]!
+        
+        # Metadata
+        createdAt: String!
+        updatedAt: String!
+    }
+
+    # Folder tree para estructura jerárquica
+    type FolderTree {
+        id: ID!
+        name: String!
+        icon: String
+        color: String
+        templateCount: Int!
+        subfolders: [FolderTree!]!
+    }
+
+    input FolderInput {
+        name: String!
+        description: String
+        parentId: ID
+        icon: String
+        color: String
+    }
+
+    extend type Query {
+        # Folders
+        folders: [Folder!]!
+        folder(id: ID!): Folder
+        folderTree: [FolderTree!]!
+    }
+
+    extend type Mutation {
+        # Folders
+        createFolder(input: FolderInput!): Folder!
+        updateFolder(id: ID!, input: FolderInput!): Folder!
+        deleteFolder(id: ID!, moveTemplatesToRoot: Boolean): Boolean!
+        createSubfolder(parentFolderId: ID!, input: FolderInput!): Folder!
+        shareFolder(id: ID!, input: ShareInput!): Folder!
+    }
+`;

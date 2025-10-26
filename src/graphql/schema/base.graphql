@@ -1,0 +1,25 @@
+scalar JSON
+
+enum TemplateStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
+}
+
+input ShareInput {
+    targetUserIds: [ID!]!
+    isPublic: Boolean
+}
+
+type AuthPayload {
+    token: String!
+    refreshToken: String!
+    user: User
+}
+
+type User {
+    id: ID!
+    email: String!
+    name: String!
+    createdAt: String!
+}
