@@ -4,14 +4,14 @@ type Folder {
     description: String
     owner: ID!
     parent: Folder
-    parentId: ID
-    templates: [Template!]!
-    templateCount: Int!
+    # parentId: ID
+    # templates: [Template!]!
+    # templateCount: Int!
     icon: String
     color: String
     isShared: Boolean!
     sharedWith: [ID!]!
-    subfolders: [Folder!]!
+    # subfolders: [Folder!]!
     createdAt: String!
     updatedAt: String!
 }
@@ -21,14 +21,14 @@ type FolderTree {
     name: String!
     icon: String
     color: String
-    templateCount: Int!
-    subfolders: [FolderTree!]!
+    # templateCount: Int!
+    # subfolders: [FolderTree!]!
 }
 
 input FolderInput {
     name: String!
     description: String
-    parentId: ID
+    # parentId: ID
     icon: String
     color: String
 }

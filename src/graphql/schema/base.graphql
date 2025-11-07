@@ -1,9 +1,10 @@
 scalar JSON
 
 enum TemplateStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
+    draft
+    published
+    unpublished
+    archived
 }
 
 input ShareInput {
