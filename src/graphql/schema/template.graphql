@@ -6,7 +6,7 @@ type Template {
     jsonSchema: JSON!
     sampleData: JSON!
     owner: ID!
-    # folder: Folder
+    folder: Folder
     folderId: ID
     
     # Preparado para expansión
