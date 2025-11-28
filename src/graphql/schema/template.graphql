@@ -3,36 +3,36 @@ type Template {
     name: String!
     html: String!
     css: String!
-    jsonSchema: JSON!
+    jsonSchema: JSON
     sampleData: JSON!
-    owner: ID!
+    owner: ID
     folder: Folder
     folderId: ID
     
     # Preparado para expansión
     # access: AccessConfig!
-    status: TemplateStatus!
+    status: TemplateStatus
     # version: Int!
-    tags: [String!]!
+    tags: [String!]
     
     # Metadata
-    createdAt: String!
-    updatedAt: String!
-    userCreated: ID!
-    userUpdated: ID!
+    createdAt: String
+    updatedAt: String
+    userCreated: ID
+    userUpdated: ID
 }
 
 input TemplateInput {
     name: String!
     html: String!
     css: String
-    jsonSchema: JSON!
+    jsonSchema: JSON
     sampleData: JSON!
     folderId: ID
     tags: [String!]
     status: TemplateStatus
-    userCreated: ID!
-    userUpdated: ID!
+    userCreated: ID
+    userUpdated: ID
 }
 
 input TemplateUpdateInput {

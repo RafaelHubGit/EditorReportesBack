@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { FolderService } from "../../services/folder.service";
 import { TemplateService } from "../../services/template.service";
 
@@ -19,7 +20,7 @@ export const templateResolvers = {
             console.log("🟢 TEST QUERY EJECUTADO");
             return [{ id: "test", name: "Test Template" }];
         },
-    
+
 
         allTemplates: async () => {
             console.log("🟢 [RESOLVER] allTemplates EJECUTADO");
@@ -67,6 +68,13 @@ export const templateResolvers = {
     Mutation: {
         createTemplate: async (_: any, { input }: { input: any }) => {
             const userId = getUserId();
+            if (!input.id) {
+                input.id = uuidv4();
+            }
+            input.createdAt = new Date().toISOString();
+            input.updatedAt = new Date().toISOString();
+            input.jsonSchema = {}; //TODO: Implementar, debe de crear el jsonSchema a partir de sampleData
+            input.status = 'draft';
             return await TemplateService.createTemplate({
                 ...input,
                 owner: userId,
