@@ -48,7 +48,7 @@ app.get('/health', async (req, res) => {
         postgresql: postgresHealth.status
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({
       status: 'ERROR',
       error: error.message
