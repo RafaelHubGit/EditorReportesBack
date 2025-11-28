@@ -5,13 +5,13 @@ type Folder {
     owner: ID!
     parent: Folder
     # parentId: ID
-    # templates: [Template!]!
+    templates: [Template!]!
     # templateCount: Int!
     icon: String
     color: String
     isShared: Boolean!
     sharedWith: [ID!]!
-    # subfolders: [Folder!]!
+    subfolders: [Folder!]!
     createdAt: String!
     updatedAt: String!
 }

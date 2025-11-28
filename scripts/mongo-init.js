@@ -1,8 +1,8 @@
 db = db.getSiblingDB('pdf_templates');
 
 db.createUser({
-  user: 'pdf_user',
-  pwd: 'pdf_password',
+  user: 'admin',
+  pwd: 'password123',
   roles: [
     {
       role: 'readWrite',
