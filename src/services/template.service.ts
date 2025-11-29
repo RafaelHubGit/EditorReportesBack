@@ -18,24 +18,24 @@ export class TemplateService {
     static async getAllTemplates(): Promise<ITemplate[]> {
         try {
             console.log("🟢 [getAllTemplates] EJECUTANDO...");
-            
+
             const templates = await Template.find().exec();
-            
+
             console.log("📦 Templates encontrados:", templates);
             console.log("🔢 Número de templates:", templates?.length || 0);
             console.log("📝 Tipo de templates:", typeof templates);
             console.log("🔍 Es array?:", Array.isArray(templates));
-            
+
             if (!templates) {
                 console.log("❌ templates es NULL o UNDEFINED");
                 return []; // ← Nunca retornes null
             }
-            
+
             if (templates.length === 0) {
                 console.log("ℹ️  No hay templates, retornando array vacío");
                 return [];
             }
-            
+
             console.log("✅ Retornando templates:", templates.length);
             return templates;
         } catch (error) {
@@ -64,9 +64,9 @@ export class TemplateService {
             return await Template.findOne({
                 _id: templateId,
                 $or: [
-                { owner: userId },
-                { 'access.sharedWith': userId },
-                { 'access.isPublic': true }
+                    { owner: userId },
+                    { 'access.sharedWith': userId },
+                    { 'access.isPublic': true }
                 ]
             }).exec();
         } catch (error) {
@@ -77,19 +77,19 @@ export class TemplateService {
 
     // Actualizar template
     static async updateTemplate(
-        templateId: string, 
-        userId: string, 
+        templateId: string,
+        userId: string,
         updateData: Partial<ITemplate>
     ): Promise<ITemplate | null> {
         try {
             return await Template.findOneAndUpdate(
-                { 
-                _id: templateId, 
-                owner: userId  // Solo el owner puede actualizar
+                {
+                    _id: templateId,
+                    owner: userId  // Solo el owner puede actualizar
                 },
-                { 
-                ...updateData,
-                version: { $inc: 1 }  // Incrementar versión
+                {
+                    ...updateData,
+                    // version: { $inc: 1 }  // Incrementar versión
                 },
                 { new: true, runValidators: true }
             ).exec();
@@ -106,7 +106,7 @@ export class TemplateService {
                 _id: templateId,
                 owner: userId  // Solo el owner puede eliminar
             }).exec();
-            
+
             return result.deletedCount > 0;
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -116,16 +116,16 @@ export class TemplateService {
 
     // Buscar templates por tags o nombre
     static async searchTemplates(
-        userId: string, 
-        searchTerm: string, 
+        userId: string,
+        searchTerm: string,
         tags?: string[]
     ): Promise<ITemplate[]> {
         try {
             const query: any = {
                 $or: [
-                { owner: userId },
-                { 'access.sharedWith': userId },
-                { 'access.isPublic': true }
+                    { owner: userId },
+                    { 'access.sharedWith': userId },
+                    { 'access.isPublic': true }
                 ]
             };
 
@@ -153,13 +153,13 @@ export class TemplateService {
             return await Template.find({
                 folderId: folderId,
                 $or: [
-                { owner: userId },
-                { 'access.sharedWith': userId },
-                { 'access.isPublic': true }
+                    { owner: userId },
+                    { 'access.sharedWith': userId },
+                    { 'access.isPublic': true }
                 ]
             })
-            .sort({ createdAt: -1 })
-            .exec();
+                .sort({ createdAt: -1 })
+                .exec();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Error fetching folder templates: ${message}`);
@@ -173,8 +173,8 @@ export class TemplateService {
                 owner: userId,
                 folderId: { $exists: false }
             })
-            .sort({ createdAt: -1 })
-            .exec();
+                .sort({ createdAt: -1 })
+                .exec();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             throw new Error(`Error fetching root templates: ${message}`);
@@ -190,13 +190,13 @@ export class TemplateService {
     ): Promise<ITemplate | null> {
         try {
             return await Template.findOneAndUpdate(
-                { 
-                _id: templateId, 
-                owner: userId  // Solo el owner puede compartir
+                {
+                    _id: templateId,
+                    owner: userId  // Solo el owner puede compartir
                 },
                 {
-                $addToSet: { 'access.sharedWith': { $each: targetUserIds } },
-                'access.isPublic': isPublic
+                    $addToSet: { 'access.sharedWith': { $each: targetUserIds } },
+                    'access.isPublic': isPublic
                 },
                 { new: true, runValidators: true }
             ).exec();

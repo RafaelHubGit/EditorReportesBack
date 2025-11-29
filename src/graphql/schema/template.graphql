@@ -1,5 +1,5 @@
 type Template {
-    id: ID!
+    id: ID
     name: String!
     html: String!
     css: String!
@@ -36,16 +36,16 @@ input TemplateInput {
 }
 
 input TemplateUpdateInput {
-    name: String
-    html: String
-    css: String
+    name: String!
+    html: String!
+    css: String!
     jsonSchema: JSON
-    sampleData: JSON
+    sampleData: JSON!
     folderId: ID
     tags: [String!]
     status: TemplateStatus
-    userCreated: ID!
-    userUpdated: ID!
+    userCreated: ID
+    userUpdated: ID
 }
 
 extend type Query {
