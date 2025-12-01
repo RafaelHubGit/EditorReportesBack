@@ -8,7 +8,7 @@ export const environment = {
     port: parseInt(process.env.PORT || '4000'),
     
     // Databases
-    mongodbUri: process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/pdf_templates?directConnection=true',
+    mongodbUri: process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/pdf_templates?authSource=admin&directConnection=true',
     postgresUri: process.env.POSTGRES_URI || 'postgresql://admin:password123@localhost:5432/pdf_auth',
     
     // JWT (para después)
