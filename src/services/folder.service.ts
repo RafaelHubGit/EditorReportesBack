@@ -1,6 +1,7 @@
 import { Folder } from '../models/Folder.model';
 import { Template } from '../models/Template.model';
 import { IFolder } from '../types/mongo.types';
+import { TemplateService } from './template.service';
 
 export class FolderService {
     // Crear un nuevo folder
@@ -8,7 +9,7 @@ export class FolderService {
         try {
         const folder = new Folder(folderData);
         return await folder.save();
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error creating folder: ${error.message}`);
         }
     }
@@ -29,7 +30,7 @@ export class FolderService {
         }
 
         return folders;
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error fetching folders: ${error.message}`);
         }
     }
@@ -46,7 +47,7 @@ export class FolderService {
         })
         .populate('templateIds', 'name html css jsonSchema sampleData createdAt')
         .exec();
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error fetching folder: ${error.message}`);
         }
     }
@@ -66,7 +67,7 @@ export class FolderService {
             updateData,
             { new: true, runValidators: true }
         ).exec();
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error updating folder: ${error.message}`);
         }
     }
@@ -83,18 +84,20 @@ export class FolderService {
             return false;
         }
 
+        const templates = await TemplateService.getTemplatesByFolder(folderId, userId);
+
         // Si el folder tiene templates, moverlos a root o eliminarlos
-        if (folder.templateIds.length > 0 && moveTemplatesToRoot) {
+        if (templates.length > 0 && moveTemplatesToRoot) {
             await Template.updateMany(
-            { _id: { $in: folder.templateIds } },
-            { $unset: { folderId: 1 } }  // Remover referencia al folder
+            { _id: { $in: templates.map(t => t._id) } },
+            { $unset: { folderId: null } }  // Remover referencia al folder
             );
         }
 
         // Eliminar el folder
         const result = await Folder.deleteOne({ _id: folderId, owner: userId }).exec();
         return result.deletedCount > 0;
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error deleting folder: ${error.message}`);
         }
     }
@@ -161,7 +164,7 @@ export class FolderService {
         );
 
         return true;
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error moving template: ${error.message}`);
         }
     }
@@ -175,24 +178,25 @@ export class FolderService {
             .exec();
 
         // Construir árbol jerárquico
-        const buildTree = (parentId: string | null = null) => {
-            return folders
-            .filter(folder => 
-                (parentId === null && !folder.parentId) || 
-                folder.parentId?.toString() === parentId
-            )
-            .map(folder => ({
-                id: folder._id,
-                name: folder.name,
-                icon: folder.icon,
-                color: folder.color,
-                templateCount: folder.templateIds.length,
-                subfolders: buildTree(folder._id.toString())
-            }));
-        };
+        // const buildTree = (parentId: string | null = null) => {
+        //     return folders
+        //     .filter(folder => 
+        //         (parentId === null && !folder.parentId) || 
+        //         folder.parentId?.toString() === parentId
+        //     )
+        //     .map(folder => ({
+        //         id: folder._id,
+        //         name: folder.name,
+        //         icon: folder.icon,
+        //         color: folder.color,
+        //         templateCount: folder.templateIds.length,
+        //         subfolders: buildTree(folder._id.toString())
+        //     }));
+        // };
 
-        return buildTree();
-        } catch (error) {
+        // return buildTree(null);
+        return folders;
+        } catch (error: any) {
         throw new Error(`Error building folder tree: ${error.message}`);
         }
     }
@@ -221,7 +225,7 @@ export class FolderService {
         });
 
         return await subfolder.save();
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error creating subfolder: ${error.message}`);
         }
     }
@@ -245,7 +249,7 @@ export class FolderService {
             },
             { new: true, runValidators: true }
         ).exec();
-        } catch (error) {
+        } catch (error: any) {
         throw new Error(`Error sharing folder: ${error.message}`);
         }
     }
