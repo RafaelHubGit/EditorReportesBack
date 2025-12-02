@@ -14,15 +14,15 @@ input ShareInput {
 
 type AuthPayload {
     token: String!
-    refreshToken: String!
+    refreshToken: String
     user: User
 }
 
 type User {
-    id: ID!
+    id: ID
     email: String!
     name: String!
-    createdAt: String!
+    createdAt: String
 }
 
 # DEFINIR LOS TIPOS BASE

@@ -7,6 +7,7 @@ import { connectMongoDB } from './database/mongo/conection';
 import { environment } from './config/enviroment';
 import mongoose from 'mongoose';
 import { json } from 'body-parser';
+import { AppDataSource } from './config/typeorm.config';
 
 // Importaciones que crearemos después
 // import { connectMongoDB } from './database/mongo/connection';
@@ -72,6 +73,11 @@ async function startServer() {
     
     // Conectar bases de datos
     await connectMongoDB();
+
+    // Conectar base de datos de TypeORM
+    await AppDataSource.initialize();
+    
+    // Conectar base de datos de PostgreSQL
     await connectPostgreSQL();
     
     // Inicializar Apollo Server
