@@ -1,0 +1,26 @@
+//TODO: Se debe implementar la invalidacion de tokens 
+1. se debe agreagar un campo a la bd de usuario donde se guarde el hash del refresh token
+2. cuando se quira obtener un nuevo access token, se debe validar que el refresh token sea valido con el de la bd
+3. si no es valido, se debe iniciar sesion de nuevo
+
+1. Login:
+   - Generar access token (1h)
+   - Generar refresh token (30d) con ID único
+   - Guardar HASH(refresh token) en BD con estado "active"
+   - Devolver ambos al frontend
+
+2. Refresh:
+   - Frontend envía refresh token
+   - Backend:
+     a. Verificar firma JWT (que no esté adulterado)
+     b. Buscar HASH(token) en BD
+     c. Verificar que esté "active" y no expirado
+     d. Cambiar estado a "used" (INVALIDARLO)
+     e. Generar NUEVO access token
+     f. Generar NUEVO refresh token
+     g. Guardar HASH(nuevo token) en BD
+     h. Devolver nuevos tokens
+   - Frontend reemplaza tokens
+
+3. Logout:
+   - Marcar token como "revoked" en BD

@@ -1,7 +1,13 @@
 import { AppDataSource } from '../config/typeorm.config';
 import { User } from '../entities/User.entity';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+
+
+const expiresTokens = {
+    access: { expiresIn: '1h' } as SignOptions,
+    refresh: { expiresIn: '30d' } as SignOptions
+};
 
 export class UserService {
     private static userRepository = AppDataSource.getRepository(User);
@@ -57,13 +63,13 @@ export class UserService {
         const token = jwt.sign(
             { userId: user.id, email: user.email },
             process.env.JWT_SECRET || 'fallback-secret',
-            { expiresIn: '1h' }
+            expiresTokens.access
         );
 
         const refreshToken = jwt.sign(
             { userId: user.id },
             process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
-            { expiresIn: '7d' }
+            expiresTokens.refresh
         );
 
         // Eliminar password del objeto retornado
@@ -173,31 +179,39 @@ export class UserService {
         }
     }
 
-    static async refreshUserToken(refreshToken: string) {
+    static async refreshUserToken(refreshTokenVar: string) {
         try {
             const decoded = jwt.verify(
-                refreshToken, 
+                refreshTokenVar, 
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret'
             ) as any;
+
 
             const user = await this.getUserById(decoded.userId);
 
             // Generar nuevos tokens
-            const newToken = jwt.sign(
-                { userId: user.id, email: user.email },
+            const token = jwt.sign(
+                { 
+                    userId: user.id, 
+                    email: user.email,
+                    type: 'access'
+                },
                 process.env.JWT_SECRET || 'fallback-secret',
-                { expiresIn: '1h' }
+                expiresTokens.access
             );
 
-            const newRefreshToken = jwt.sign(
-                { userId: user.id },
+            const refreshToken = jwt.sign(
+                { 
+                    userId: user.id,
+                    type: 'refresh'
+                },
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
-                { expiresIn: '7d' }
+                expiresTokens.refresh
             );
 
             return {
-                token: newToken,
-                refreshToken: newRefreshToken,
+                token   ,
+                refreshToken,
                 user
             };
         } catch (error) {

@@ -37,11 +37,9 @@ export const userResolvers = {
             return await UserService.authenticateUser(email, password);
         },
 
-        refreshToken: async (_: any, __: any, context: any) => {
-            // TODO: Implementar con refresh token del contexto
-            // const refreshToken = context.refreshToken;
-            // return await UserService.refreshUserToken(refreshToken);
-            throw new Error('Refresh token not implemented yet');
+        refreshToken: async (_: any, { input }: { input: any }) => {
+            const refreshToken = input.refreshToken;
+            return await UserService.refreshUserToken(refreshToken);
         },
 
         updateUser: async (_: any, { input }: { input: any }, context: any) => {

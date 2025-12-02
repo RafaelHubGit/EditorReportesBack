@@ -22,6 +22,10 @@ input UpdateUserInput {
     email: String
 }
 
+input RefreshTokenInput {
+    refreshToken: String!
+}
+
 extend type Query {
     me: User
     users: [User!]!
@@ -31,7 +35,7 @@ extend type Query {
 extend type Mutation {
     register(input: RegisterInput!): User
     login(input: LoginInput!): AuthPayload!
-    refreshToken: AuthPayload!
+    refreshToken(input: RefreshTokenInput!): AuthPayload!
     updateUser(input: UpdateUserInput!): User!
     deleteUser: Boolean!
     changePassword(oldPassword: String!, newPassword: String!): Boolean!
