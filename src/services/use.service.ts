@@ -2,6 +2,7 @@ import { AppDataSource } from '../config/typeorm.config';
 import { User } from '../entities/User.entity';
 import bcrypt from 'bcrypt';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { saveHashRefreshTokenToUser } from '../helpers/user.helpers';
 
 
 const expiresTokens = {
@@ -71,6 +72,8 @@ export class UserService {
             process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
             expiresTokens.refresh
         );
+
+        saveHashRefreshTokenToUser(user, refreshToken, this.userRepository);
 
         // Eliminar password del objeto retornado
         const { password_hash, ...userWithoutPassword } = user;
@@ -208,6 +211,8 @@ export class UserService {
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
                 expiresTokens.refresh
             );
+
+            saveHashRefreshTokenToUser(user, refreshToken, this.userRepository);
 
             return {
                 token   ,

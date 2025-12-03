@@ -38,6 +38,13 @@ export class User {
     })
     google_id!: string;
 
+    @Column({
+        type: 'varchar',
+        nullable: true,
+        length: 255
+    })
+    refresh_token_hash?: string;
+
     @CreateDateColumn({ 
         type: 'timestamp' 
     })

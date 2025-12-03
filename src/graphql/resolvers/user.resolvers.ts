@@ -28,7 +28,6 @@ export const userResolvers = {
 
     Mutation: {
         register: async (_: any, { input }: { input: any }) => {
-            console.log("INPUT : : ", input);
             return await UserService.createUser(input);
         },
 
