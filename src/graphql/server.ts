@@ -2,6 +2,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express4';
 import { resolvers } from './resolvers/index';
 import { typeDefs } from './schema/index';
+import { authenticateTokenMiddleware } from '../middlewares/auth.middleware';
 
 export async function createApolloServer() {
     const server = new ApolloServer({
@@ -26,14 +27,13 @@ export async function createApolloServer() {
 export const apolloMiddleware = (server: ApolloServer) => 
     expressMiddleware(server, {
         context: async ({ req }) => {
-        // TODO: Implementar autenticación JWT
-        // const token = req.headers.authorization?.replace('Bearer ', '');
-        // const user = await verifyToken(token);
+            const authResult = await authenticateTokenMiddleware(req);
         
-        return {
-            // user,
-            // authScope: token ? 'authenticated' : 'public'
-        };
+            return {
+                user: authResult.user,
+                authScope: authResult,
+                req
+            };
         },
     }
 );

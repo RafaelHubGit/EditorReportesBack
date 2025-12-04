@@ -1,3 +1,4 @@
+import { requireAuth } from "../../guards/auth.guard";
 import { UserService } from "../../services/use.service";
 
 
@@ -8,22 +9,17 @@ export const userResolvers = {
     },
 
     Query: {
-        me: async (_: any, __: any, context: any) => {
-            // TODO: Implementar con contexto de autenticación
-            // const userId = context.user.id;
-            // return await UserService.getCurrentUser(userId);
-            
-            // Temporal: retornar null hasta implementar auth
-            return null;
-        },
+        me: requireAuth(async (_: any, __: any, context: any) => {
+            return context.user;
+        }),
 
-        users: async () => {
+        users: requireAuth(async (_: any, __: any, context: any) => {
             return await UserService.getAllUsers();
-        },
+        }),
 
-        user: async (_: any, { id }: { id: string }) => {
+        user: requireAuth(async (_: any, { id }: { id: string }, context: any) => {
             return await UserService.getUserById(id);
-        },
+        }),
     },
 
     Mutation: {
@@ -41,28 +37,19 @@ export const userResolvers = {
             return await UserService.refreshUserToken(refreshToken);
         },
 
-        updateUser: async (_: any, { input }: { input: any }, context: any) => {
-            // TODO: Implementar con contexto de autenticación
-            // const userId = context.user.id;
-            // return await UserService.updateUser(userId, input);
-            throw new Error('Authentication required');
-        },
+        updateUser: requireAuth(async (_: any, { input }: { input: any }, context: any) => {
+            return await UserService.updateUser(context.user.id, input);
+        }),
 
-        deleteUser: async (_: any, __: any, context: any) => {
-            // TODO: Implementar con contexto de autenticación
-            // const userId = context.user.id;
-            // return await UserService.deleteUser(userId);
-            throw new Error('Authentication required');
-        },
+        deleteUser: requireAuth(async (_: any, __: any, context: any) => {
+            return await UserService.deleteUser(context.user.id);
+        }),
 
-        changePassword: async (_: any, { oldPassword, newPassword }: { 
+        changePassword: requireAuth(async (_: any, { oldPassword, newPassword }: { 
             oldPassword: string; 
             newPassword: string 
         }, context: any) => {
-            // TODO: Implementar con contexto de autenticación
-            // const userId = context.user.id;
-            // return await UserService.changePassword(userId, oldPassword, newPassword);
-            throw new Error('Authentication required');
-        },
+            return await UserService.changePassword(context.user.id, oldPassword, newPassword);
+        }),
     }
 };

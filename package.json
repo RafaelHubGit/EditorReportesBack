@@ -5,6 +5,7 @@
     "main": "dist/index.js",
     "scripts": {
         "dev": "tsx watch src/index.ts",
+        "dev:clean": "rm -rf node_modules/.tsx && npm run dev",
         "build": "tsc",
         "start": "node dist/index.js",
         "generate-types": "graphql-codegen --config codegen.yml",

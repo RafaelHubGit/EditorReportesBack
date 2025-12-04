@@ -1,14 +1,9 @@
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/typeorm.config';
 import { User } from '../entities/User.entity';
-import bcrypt from 'bcrypt';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import { saveHashRefreshTokenToUser } from '../helpers/user.helpers';
+import { generateTokens, isRefreshTokenValid, saveHashRefreshTokenToUser } from '../helpers/user.helpers';
 
-
-const expiresTokens = {
-    access: { expiresIn: '1h' } as SignOptions,
-    refresh: { expiresIn: '30d' } as SignOptions
-};
 
 export class UserService {
     private static userRepository = AppDataSource.getRepository(User);
@@ -61,17 +56,7 @@ export class UserService {
         }
 
         // Generar tokens
-        const token = jwt.sign(
-            { userId: user.id, email: user.email },
-            process.env.JWT_SECRET || 'fallback-secret',
-            expiresTokens.access
-        );
-
-        const refreshToken = jwt.sign(
-            { userId: user.id },
-            process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
-            expiresTokens.refresh
-        );
+        const { token, refreshToken } = generateTokens(user);
 
         saveHashRefreshTokenToUser(user, refreshToken, this.userRepository);
 
@@ -85,16 +70,19 @@ export class UserService {
         };
     }
 
-    static async getUserById(id: string) {
+    static async getUserById(id: string, includeHash = false) {
+        const selectFields: any[] = ['id', 'email', 'name', 'created_at', 'updated_at'];
+        
+        if (includeHash) {
+            selectFields.push('refresh_token_hash');
+        }
+        
         const user = await this.userRepository.findOne({
             where: { id },
-            select: ['id', 'email', 'name', 'created_at', 'updated_at']
+            select: selectFields
         });
-
-        if (!user) {
-            throw new Error('User not found');
-        }
-
+        
+        if (!user) throw new Error('User not found');
         return user;
     }
 
@@ -184,34 +172,26 @@ export class UserService {
 
     static async refreshUserToken(refreshTokenVar: string) {
         try {
+
+            console.log("refreshTokenVar", refreshTokenVar);
             const decoded = jwt.verify(
                 refreshTokenVar, 
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret'
             ) as any;
 
 
-            const user = await this.getUserById(decoded.userId);
+            const user = await this.getUserById(decoded.userId, true);
+
+            console.log("user", user);
+
+            const isRefreshTokenValidCheck = await isRefreshTokenValid(refreshTokenVar, user);
+            if (!isRefreshTokenValidCheck) {
+                throw new Error('Invalid refresh token');
+            }
 
             // Generar nuevos tokens
-            const token = jwt.sign(
-                { 
-                    userId: user.id, 
-                    email: user.email,
-                    type: 'access'
-                },
-                process.env.JWT_SECRET || 'fallback-secret',
-                expiresTokens.access
-            );
-
-            const refreshToken = jwt.sign(
-                { 
-                    userId: user.id,
-                    type: 'refresh'
-                },
-                process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
-                expiresTokens.refresh
-            );
-
+            const { token, refreshToken } = generateTokens(user);
+            
             saveHashRefreshTokenToUser(user, refreshToken, this.userRepository);
 
             return {

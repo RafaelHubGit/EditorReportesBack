@@ -15,9 +15,8 @@ const FolderSchema = new Schema<IFolder>({
     },
 
     owner: {
-        type: Schema.Types.ObjectId,
+        type: String,
         required: [true, 'Owner is required'],
-        ref: 'User'
     },
 
     // parentId: {

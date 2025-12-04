@@ -30,9 +30,8 @@ const TemplateSchema = new Schema<ITemplate>({
     },
     
     owner: {
-        type: Schema.Types.ObjectId,
+        type: String,
         required: [true, 'Owner is required'],
-        ref: 'User'  // Referencia a usuarios (cuando los tengamos)
     },
     
     folderId: {
@@ -54,8 +53,7 @@ const TemplateSchema = new Schema<ITemplate>({
             default: false
         },
         sharedWith: [{
-            type: Schema.Types.ObjectId,
-            ref: 'User'
+            type: String
         }]
     },
     

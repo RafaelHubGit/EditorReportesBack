@@ -1,9 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { FolderService } from "../../services/folder.service";
 import { TemplateService } from "../../services/template.service";
-
-
-const getUserId = () => '65a1b2c3d4e5f67890123456'; // Temporal
+import { requireAuth } from "../../guards/auth.guard";
 
 export const templateResolvers = {
     Template: {
@@ -22,7 +20,7 @@ export const templateResolvers = {
         },
 
 
-        allTemplates: async () => {
+        allTemplates: requireAuth(async (_: any, __: any, context: any) => {
             console.log("🟢 [RESOLVER] allTemplates EJECUTADO");
             try {
                 const result = await TemplateService.getAllTemplates();
@@ -32,42 +30,42 @@ export const templateResolvers = {
                 console.error("🔴 Error en resolver:", error);
                 return [];
             }
-        },
+        }),
 
-        templatesByUser: async () => {
-            const userId = getUserId();
+        templatesByUser: requireAuth(async (_: any, __: any, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.getTemplatesByUser(userId);
-        },
+        }),
 
-        templatesByIdAndUserId: async (_: any, { id }: { id: string }) => {
-            const userId = getUserId();
+        templatesByIdAndUserId: requireAuth(async (_: any, { id }: { id: string }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.getTemplateByIdAndUserId(id, userId);
-        },
+        }),
 
-        template: async (_: any, { id }: { id: string }) => {
-            const userId = getUserId();
+        template: requireAuth(async (_: any, { id }: { id: string }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.getTemplateByIdAndUserId(id, userId);
-        },
+        }),
 
-        templatesByFolder: async (_: any, { folderId }: { folderId: string }) => {
-            const userId = getUserId();
+        templatesByFolder: requireAuth(async (_: any, { folderId }: { folderId: string }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.getTemplatesByFolder(folderId, userId);
-        },
+        }),
 
-        rootTemplates: async () => {
-            const userId = getUserId();
+        rootTemplates: requireAuth(async (_: any, __: any, context: any) => {   
+            const userId = context.user.id;
             return await TemplateService.getRootTemplates(userId);
-        },
+        }),
 
-        searchTemplates: async (_: any, { searchTerm, tags }: { searchTerm?: string; tags?: string[] }) => {
-            const userId = getUserId();
+        searchTemplates: requireAuth(async (_: any, { searchTerm, tags }: { searchTerm?: string; tags?: string[] }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.searchTemplates(userId, searchTerm || '', tags);
-        },
+        }),
     },
 
     Mutation: {
-        createTemplate: async (_: any, { input }: { input: any }) => {
-            const userId = getUserId();
+        createTemplate: requireAuth(async (_: any, { input }: { input: any }, context: any) => {
+            const userId = context.user.id;
             if (!input.id) {
                 input.id = uuidv4();
             }
@@ -79,26 +77,26 @@ export const templateResolvers = {
                 ...input,
                 owner: userId,
             });
-        },
+        }),
 
-        updateTemplate: async (_: any, { id, input }: { id: string; input: any }) => {
-            const userId = getUserId();
+        updateTemplate: requireAuth(async (_: any, { id, input }: { id: string; input: any }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.updateTemplate(id, userId, input);
-        },
+        }),
 
-        deleteTemplate: async (_: any, { id }: { id: string }) => {
-            const userId = getUserId();
+        deleteTemplate: requireAuth(async (_: any, { id }: { id: string }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.deleteTemplate(id, userId);
-        },
+        }),
 
-        shareTemplate: async (_: any, { id, input }: { id: string; input: any }) => {
-            const userId = getUserId();
+        shareTemplate: requireAuth(async (_: any, { id, input }: { id: string; input: any }, context: any) => {
+            const userId = context.user.id;
             return await TemplateService.shareTemplate(id, userId, input.targetUserIds, input.isPublic);
-        },
+        }),
 
-        moveTemplate: async (_: any, { templateId, folderId }: { templateId: string; folderId?: string }) => {
-            const userId = getUserId();
+        moveTemplate: requireAuth(async (_: any, { templateId, folderId }: { templateId: string; folderId?: string }, context: any) => {
+            const userId = context.user.id;
             return await FolderService.moveTemplateToFolder(templateId, folderId || null, userId);
-        },
+        }),
     }
 };
