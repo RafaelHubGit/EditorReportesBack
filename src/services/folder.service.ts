@@ -15,20 +15,11 @@ export class FolderService {
     }
 
     // Obtener folders por usuario (con estructura de árbol)
-    static async getFoldersByUser(userId: string, includeTemplates: boolean = false): Promise<IFolder[]> {
+    static async getFoldersByUser(userId: string): Promise<IFolder[]> {
         try {
         const folders = await Folder.find({ owner: userId })
             .sort({ createdAt: -1 })
             .exec();
-
-        if (includeTemplates) {
-            // Populate templates si se solicita
-            return await Folder.populate(folders, {
-            path: 'templateIds',
-            select: 'name createdAt'
-            });
-        }
-
         return folders;
         } catch (error: any) {
         throw new Error(`Error fetching folders: ${error.message}`);
@@ -45,7 +36,6 @@ export class FolderService {
             { sharedWith: userId }
             ]
         })
-        .populate('templateIds', 'name html css jsonSchema sampleData createdAt')
         .exec();
         } catch (error: any) {
         throw new Error(`Error fetching folder: ${error.message}`);

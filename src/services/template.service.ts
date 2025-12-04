@@ -85,7 +85,7 @@ export class TemplateService {
             return await Template.findOneAndUpdate(
                 {
                     _id: templateId,
-                    owner: userId  // Solo el owner puede actualizar
+                    //owner: userId  // Solo el owner puede actualizar
                 },
                 {
                     ...updateData,

@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import { User } from "../entities/User.entity";
 import { Request } from "express";
 import { UserService } from '../services/use.service';
-import dayjs from 'dayjs';
 
 // auth.middleware.ts
 export const authenticateTokenMiddleware = async (req: Request): Promise<{
@@ -21,13 +20,7 @@ export const authenticateTokenMiddleware = async (req: Request): Promise<{
   const token = authHeader.replace('Bearer ', '');
   
   try {
-    console.log("🟢 AUTH TOKEN", token); 
-    console.log("🟢 AUTH SECRET", process.env.JWT_SECRET);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
-
-    console.log("iat time", dayjs(decoded.iat).format('YYYY-MM-DD HH:mm:ss'));
-    console.log("exp time", dayjs(decoded.exp).format('YYYY-MM-DD HH:mm:ss'));
-    console.log("current time", dayjs().format('YYYY-MM-DD HH:mm:ss'));
 
     const user = await UserService.getUserById(decoded.userId);
 
@@ -40,7 +33,6 @@ export const authenticateTokenMiddleware = async (req: Request): Promise<{
     return { user, isValid: true };
     
   } catch (error: any) {
-    console.log("‼️ AUTH ERROR", error);
     if (error.name === 'TokenExpiredError') {
       return { 
         user: null, 

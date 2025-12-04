@@ -40,15 +40,15 @@ const FolderSchema = new Schema<IFolder>({
         default: '#3B82F6'
     },
 
-    isShared: {
-        type: Boolean,
-        default: false
-    },
+    // isShared: {
+    //     type: Boolean,
+    //     default: false
+    // },
 
-    sharedWith: [{
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    }]
+    // sharedWith: [{
+    //     type: Schema.Types.ObjectId,
+    //     ref: 'User'
+    // }]
 },
     {
         timestamps: true,
@@ -61,15 +61,15 @@ FolderSchema.index({ owner: 1, parentId: 1 });
 FolderSchema.index({ owner: 1, name: 1 });
 
 // Virtual para templates count
-FolderSchema.virtual('templateCount').get(function () {
-    return this.templateIds.length;
-});
+// FolderSchema.virtual('templateCount').get(function () {
+//     return this.templateIds.length;
+// });
 
 // Virtual para subfolders (para el futuro)
-FolderSchema.virtual('subfolders', {
-    ref: 'Folder',
-    localField: '_id',
-    foreignField: 'parentId'
-});
+// FolderSchema.virtual('subfolders', {
+//     ref: 'Folder',
+//     localField: '_id',
+//     foreignField: 'parentId'
+// });
 
 export const Folder = model<IFolder>('Folder', FolderSchema);

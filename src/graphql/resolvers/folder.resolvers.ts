@@ -1,7 +1,5 @@
+import { requireAuth } from "../../guards/auth.guard";
 import { FolderService } from "../../services/folder.service";
-
-
-const getUserId = () => '65a1b2c3d4e5f67890123456'; // Temporal
 
 export const folderResolvers = {
     Folder: {
@@ -9,60 +7,58 @@ export const folderResolvers = {
             if (!parent.parentId) return null;
             // TODO: Implementar populate cuando tengamos auth real
             return null;
-        },
-        // templates: async (parent: any) => {
-        //     return parent.templateIds || [];
-        // },
-        // subfolders: async (parent: any) => {
-        //     // TODO: Implementar cuando tengamos auth real
-        //     return [];
-        // },
+        }
     },
 
     Query: {
-        folders: async () => {
-            const userId = getUserId();
-            return await FolderService.getFoldersByUser(userId, true);
-        },
+        folders: requireAuth(async (_: any, __: any, context: any) => {
+            const userId = context.user.id;
+            return await FolderService.getFoldersByUser(userId);
+        }),
 
-        folder: async (_: any, { id }: { id: string }) => {
-            const userId = getUserId();
+        folder: requireAuth(async (_: any, { id }: { id: string }, __: any, context: any) => {
+            const userId = context.user.id;
             return await FolderService.getFolderById(id, userId);
-        },
+        }),
 
-        folderTree: async () => {
-            const userId = getUserId();
+        folderTree: requireAuth(async (_: any, __: any, context: any) => {
+            const userId = context.user.id;
             return await FolderService.getFolderTree(userId);
-        },
+        }),
+
+        foldersByUser: requireAuth(async (_:any, __: any, context: any) => {
+            const userId = context.user.id;
+            return await FolderService.getFoldersByUser(userId);
+        }),
     },
 
     Mutation: {
-        createFolder: async (_: any, { input }: { input: any }) => {
-            const userId = getUserId();
+        createFolder: requireAuth(async (_: any, { input }: { input: any }, context: any) => {
+            const userId = context.user.id;
             return await FolderService.createFolder({
                 ...input,
                 owner: userId,
             });
-        },
+        }),
 
-        updateFolder: async (_: any, { id, input }: { id: string; input: any }) => {
-            const userId = getUserId();
+        updateFolder: requireAuth(async (_: any, { id, input }: { id: string; input: any }, context: any) => {
+            const userId = context.user.id;
             return await FolderService.updateFolder(id, userId, input);
-        },
+        }),
 
-        deleteFolder: async (_: any, { id, moveTemplatesToRoot }: { id: string; moveTemplatesToRoot?: boolean }) => {
-            const userId = getUserId();
+        deleteFolder:   requireAuth(async (_: any, { id, moveTemplatesToRoot }: { id: string; moveTemplatesToRoot?: boolean }, context: any) => {
+            const userId = context.user.id; 
             return await FolderService.deleteFolder(id, userId, moveTemplatesToRoot ?? true);
-        },
+        }),
 
-        createSubfolder: async (_: any, { parentFolderId, input }: { parentFolderId: string; input: any }) => {
-            const userId = getUserId();
+        createSubfolder: requireAuth(async (_: any, { parentFolderId, input }: { parentFolderId: string; input: any }, context: any) => {
+            const userId = context.user.id;
             return await FolderService.createSubfolder(parentFolderId, input, userId);
-        },
+        }),
 
-        shareFolder: async (_: any, { id, input }: { id: string; input: any }) => {
-            const userId = getUserId();
+        shareFolder: requireAuth(async (_: any, { id, input }: { id: string; input: any }, context: any) => {
+            const userId = context.user.id;
             return await FolderService.shareFolder(id, userId, input.targetUserIds, input.isPublic);
-        },
+        }),
     }
 };

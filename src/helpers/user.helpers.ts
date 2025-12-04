@@ -6,7 +6,7 @@ import { User } from "../entities/User.entity";
 const saltRounds = 12;
 
 const expiresTokens = {
-    access: { expiresIn: '10s' } as SignOptions,
+    access: { expiresIn: '1d' } as SignOptions,
     refresh: { expiresIn: '30d' } as SignOptions
 };
 

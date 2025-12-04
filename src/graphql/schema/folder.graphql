@@ -36,6 +36,7 @@ extend type Query {
     folders: [Folder!]!
     folder(id: ID!): Folder
     folderTree: [FolderTree!]!
+    foldersByUser: [Folder!]!
 }
 
 extend type Mutation {

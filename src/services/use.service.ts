@@ -173,7 +173,6 @@ export class UserService {
     static async refreshUserToken(refreshTokenVar: string) {
         try {
 
-            console.log("refreshTokenVar", refreshTokenVar);
             const decoded = jwt.verify(
                 refreshTokenVar, 
                 process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret'
