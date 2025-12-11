@@ -4,8 +4,10 @@ import {
     Column, 
     PrimaryGeneratedColumn, 
     CreateDateColumn, 
-    UpdateDateColumn 
+    UpdateDateColumn, 
+    OneToMany
 } from 'typeorm';
+import { ApiKey } from './ApiKey.entity';
 
 @Entity('users')
 export class User {
@@ -54,4 +56,7 @@ export class User {
         type: 'timestamp' 
     })
     updated_at!: Date;
+
+    @OneToMany(() => ApiKey, (apiKey) => apiKey.user)
+    apiKeys!: ApiKey[];
 }

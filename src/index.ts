@@ -8,6 +8,7 @@ import { environment } from './config/enviroment';
 import mongoose from 'mongoose';
 import { json } from 'body-parser';
 import { AppDataSource } from './config/typeorm.config';
+import { routers } from './routes';
 
 // Importaciones que crearemos después
 // import { connectMongoDB } from './database/mongo/connection';
@@ -65,6 +66,10 @@ app.get('/', async (req, res) => {
     graphql: '/graphql'
   });
 });
+
+
+// Rutas
+app.use('/api/pdf', routers.pdf);
 
 
 async function startServer() {
