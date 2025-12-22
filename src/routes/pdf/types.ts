@@ -1,6 +1,6 @@
 // src/routes/pdf/types.ts
 export interface GeneratePDFRequest {
-  apiKey: string;
+  // apiKey: string;
   documentId: string;
   data: Record<string, any>; // JSON dinámico
   options?: {

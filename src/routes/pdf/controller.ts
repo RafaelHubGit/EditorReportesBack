@@ -2,11 +2,12 @@
 import { Request, Response } from 'express';
 import { GeneratePDFRequest, GeneratePDFResponse } from './types';
 import { generatePDFService } from './service';
+import { TemplateService } from '../../services/template.service';
 
 export const generatePDF = async (req: Request, res: Response): Promise<void> => {
   try {
     const { documentId, data, options } = req.body as GeneratePDFRequest;
-    
+
     // Validación básica
     if (!documentId || !data) {
       const response: GeneratePDFResponse = {
@@ -18,17 +19,30 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
       res.status(400).json(response);
       return;
     }
-    
+
     // Obtener info de API Key del middleware
     const apiKeyInfo = req.apiKeyInfo;
-    
+
+    const document = await TemplateService.getTemplateById(documentId);
+
+    if (!document) {
+      const response: GeneratePDFResponse = {
+        success: false,
+        documentId: documentId || 'unknown',
+        timestamp: new Date().toISOString(),
+        error: 'Document not found'
+      };
+      res.status(404).json(response);
+      return;
+    }
+
     console.log(`📄 PDF Generation Request:`, {
       documentId,
       environment: apiKeyInfo?.environment,
       client: apiKeyInfo?.clientName,
       timestamp: new Date().toISOString()
     });
-    
+
     // Llamar al servicio de PDF (lo implementaremos después)
     const result = await generatePDFService({
       apiKey: apiKeyInfo?.key || 'unknown',
@@ -37,7 +51,7 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
       options,
       environment: apiKeyInfo?.environment || 'development'
     });
-    
+
     // Responder
     const resp: GeneratePDFResponse = {
       success: true,
@@ -47,19 +61,19 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
       timestamp: new Date().toISOString(),
       message: 'PDF generated successfully'
     };
-    
+
     res.status(200).json(resp);
-    
+
   } catch (error: any) {
     console.error('❌ PDF Generation Error:', error);
-    
+
     const response: GeneratePDFResponse = {
       success: false,
       documentId: req.body.documentId || 'unknown',
       timestamp: new Date().toISOString(),
       error: error.message || 'Unknown error during PDF generation'
     };
-    
+
     res.status(500).json(response);
   }
 };

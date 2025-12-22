@@ -1,11 +1,16 @@
 
 import { ITemplate } from '../types/mongo.types';
 import { Template } from '../models/Template.model';
+import toJsonSchema from 'to-json-schema';
 
 export class TemplateService {
     // Crear un nuevo template
     static async createTemplate(templateData: Partial<ITemplate>): Promise<ITemplate> {
         try {
+
+            const schema = toJsonSchema(templateData.sampleData, { arrays: { mode: 'all' } });
+            templateData.jsonSchema = schema;
+
             const template = new Template(templateData);
             return await template.save();
         } catch (error) {
@@ -58,6 +63,15 @@ export class TemplateService {
         }
     }
 
+    static async getTemplateById(templateId: string): Promise<ITemplate | null> {
+        try {
+            return await Template.findById(templateId).exec();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`Error fetching template: ${message}`);
+        }
+    }
+
     // Obtener template por ID y usuario ID 
     static async getTemplateByIdAndUserId(templateId: string, userId: string): Promise<ITemplate | null> {
         try {
@@ -82,6 +96,10 @@ export class TemplateService {
         updateData: Partial<ITemplate>
     ): Promise<ITemplate | null> {
         try {
+
+            const schema = toJsonSchema(updateData.sampleData, { arrays: { mode: 'all' } });
+            updateData.jsonSchema = schema;
+
             return await Template.findOneAndUpdate(
                 {
                     _id: templateId,
