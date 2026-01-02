@@ -1,8 +1,8 @@
-import { 
-    Entity, 
-    Column, 
-    PrimaryGeneratedColumn, 
-    CreateDateColumn, 
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    CreateDateColumn,
     UpdateDateColumn,
     ManyToOne,
     JoinColumn
@@ -14,73 +14,68 @@ export class ApiKey {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Column({ 
-        type: 'varchar', 
+    @Column({
+        type: 'varchar',
         length: 100,
-        unique: true 
+        unique: true
     })
     api_key!: string;  // Ejemplo: "prod_xxxxx" o "dev_xxxxx"
 
     @ManyToOne(() => User, (user) => user.id, {
         onDelete: 'CASCADE'  // Si eliminas usuario, se eliminan sus keys
     })
-    @JoinColumn({ name: 'client_id' })
+    @JoinColumn({ name: 'user_id' })
     user!: User;
 
-    @Column({ 
-        type: 'uuid',
-        name: 'client_id'
-    })
-    client_id!: string;
 
-    @Column({ 
+    @Column({
         type: 'varchar',
         length: 20,
         default: 'development'
     })
     type!: 'development' | 'production';
 
-    @Column({ 
+    @Column({
         type: 'int',
         default: 60
     })
     rate_limit!: number;  // Límite por minuto (requests por minuto)
 
-    @Column({ 
+    @Column({
         type: 'int',
         name: 'rate_limit_per_day',
         default: 1000
     })
     rateLimitPerDay!: number;  // Límite diario
 
-    @Column({ 
+    @Column({
         type: 'bigint',
         name: 'total_requests',
         default: 0
     })
     totalRequests!: number;
 
-    @Column({ 
+    @Column({
         type: 'timestamp',
         name: 'last_request_at',
         nullable: true
     })
     lastRequestAt?: Date;
 
-    @Column({ 
+    @Column({
         type: 'boolean',
         name: 'is_active',
         default: true
     })
     isActive!: boolean;
 
-    @CreateDateColumn({ 
+    @CreateDateColumn({
         type: 'timestamp',
         name: 'created_at'
     })
     createdAt!: Date;
 
-    @UpdateDateColumn({ 
+    @UpdateDateColumn({
         type: 'timestamp',
         name: 'updated_at'
     })
@@ -95,7 +90,7 @@ export class ApiKey {
 
     // Método para formatear la key para mostrar (oculta parte)
     getMaskedKey(): string {
-        if (this.api_key.length <= 8) return '••••••••';
+        if (this.api_key.length <= 8) return '•••••••';
         return `${this.api_key.substring(0, 4)}••••${this.api_key.substring(this.api_key.length - 4)}`;
     }
 }

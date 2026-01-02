@@ -1,0 +1,30 @@
+type ApiKey {
+    id: String!
+    userId: String!
+    type: "development" | "production"!
+    apiKey: String!
+    createdAt: String!
+    updatedAt: String!
+}
+
+input ApiKeyInput {
+    userId: String!
+    type: "development" | "production"!
+}
+
+input ApiKeyRenewInput {
+    apiKey: String!
+    type: "development" | "production"!
+    userId: String!
+}
+
+extend type Query {
+    getApiKeyByUserId(userId: String!): ApiKey
+    getApiKeyActiveByType(type: String!): ApiKey
+}
+
+extend type Mutation {
+    createApiKey(input: ApiKeyInput!): ApiKey
+    deleteLogicalApiKey(apiKey: String!): ApiKey
+    renewApiKey(input: ApiKeyRenewInput!): ApiKey
+}

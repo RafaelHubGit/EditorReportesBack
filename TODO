@@ -1,5 +1,17 @@
 
 
+
+1. (Front) Boton de Generar APIKeys, 
+   1.1. Al entrar a esta ventana, si detecta que no tiene apikeys, debe generarlas en automatico
+   1.2. Debe haber dos apiKys una para dev el cual lanza los pdfs con marca de agua y el otro para prod el cual lanza los pdfs sin marca de agua
+   1.3. Debe tener un boton de copiar apikey
+   1.4. Debe tener un boton de eliminar apikey
+   1.5. Debe tener un boton de generar nuevo apikey (para cada una de las apikeys y poder renovarlas)
+      1.5.1. Debe mostrar un mensaje que pregunte si en verdad desea generar un nuevo apikey, de ser asi, las peticiones que usen esa apikey se quedarán invalidadas
+2. (Back) 
+   2.1. endpoint (graphQL) que genere las apikeys
+   2.2. endpoint (graphQL) que Cambie el estatus de las apikeys. 
+
 1. enviar desde el front la peticion para crear el pdf
    1.1. debe enviar el documentId
    1.2. debe enviar la data
