@@ -13,4 +13,5 @@ export const typeDefs = gql`
     ${loadSchema('user.graphql')}
     ${loadSchema('template.graphql')}
     ${loadSchema('folder.graphql')}
+    ${loadSchema('apiKey.graphql')}
 `;

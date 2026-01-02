@@ -1,7 +1,12 @@
+enum ApiKeyType {
+    development
+    production
+}
+
 type ApiKey {
     id: String!
     userId: String!
-    type: "development" | "production"!
+    type: ApiKeyType
     apiKey: String!
     createdAt: String!
     updatedAt: String!
@@ -9,18 +14,18 @@ type ApiKey {
 
 input ApiKeyInput {
     userId: String!
-    type: "development" | "production"!
+    type: ApiKeyType!
 }
 
 input ApiKeyRenewInput {
     apiKey: String!
-    type: "development" | "production"!
+    type: ApiKeyType!
     userId: String!
 }
 
 extend type Query {
     getApiKeyByUserId(userId: String!): ApiKey
-    getApiKeyActiveByType(type: String!): ApiKey
+    getApiKeyActiveByType(type: ApiKeyType!): ApiKey
 }
 
 extend type Mutation {
