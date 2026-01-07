@@ -5,7 +5,7 @@ enum ApiKeyType {
 
 type ApiKey {
     id: String!
-    userId: String!
+    userId: String
     type: ApiKeyType
     apiKey: String!
     createdAt: String!
@@ -24,7 +24,7 @@ input ApiKeyRenewInput {
 }
 
 extend type Query {
-    getApiKeyByUserId(userId: String!): ApiKey
+    getApiKeyByUserId(userId: String!): [ApiKey]
     getApiKeyActiveByType(type: ApiKeyType!): ApiKey
 }
 
