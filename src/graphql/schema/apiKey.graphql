@@ -19,8 +19,6 @@ input ApiKeyInput {
 
 input ApiKeyRenewInput {
     apiKey: String!
-    type: ApiKeyType!
-    userId: String!
 }
 
 extend type Query {

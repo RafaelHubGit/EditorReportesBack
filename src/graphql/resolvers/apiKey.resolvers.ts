@@ -27,7 +27,7 @@ export const apiKeyResolvers = {
         }),
         renewApiKey: requireAuth(async (_: any, { input }: { input: any }, context: any) => {
             input.userId = context.user.id;
-            return await ApiKeyService.renewApiKey(input.apiKey, input.type, input.userId)
+            return await ApiKeyService.renewApiKey(input.apiKey, input.userId)
         }),
         deleteLogicalApiKey: requireAuth(async (_: any, { input }: { input: any }, context: any) => {
             input.userId = context.user.id;

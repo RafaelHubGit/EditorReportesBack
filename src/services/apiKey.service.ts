@@ -8,20 +8,20 @@ export class ApiKeyService {
 
 
     public static async createApiDevelopmentKey(userId: string) {
-        return await this.apiKeyRepository.create({
-            user: { id: userId },
+        return await this.createApiKey({
+            userId,
             type: 'development',
             rate_limit: 10000,
-            rateLimitPerDay: 10000
+            rate_limit_per_day: 10000
         });
     }
 
     public static async createApiProductionKey(userId: string) {
-        return await this.apiKeyRepository.create({
-            user: { id: userId },
+        return await this.createApiKey({
+            userId,
             type: 'production',
             rate_limit: 1000,
-            rateLimitPerDay: 1000
+            rate_limit_per_day: 1000
         });
     }
 
@@ -65,20 +65,22 @@ export class ApiKeyService {
         return await this.apiKeyRepository.find({ where: { type, isActive: true } });
     }
 
-    static async renewApiKey(apiKey: string, type: 'development' | 'production', userId: string) {
+    static async renewApiKey(apiKey: string, userId: string) {
+
         const existingApiKey = await this.getApiKeyByApiKey(apiKey);
         if (!existingApiKey) {
             throw new Error('API key not found');
         }
         await this.deleteLogicalApiKey(existingApiKey);
 
-        if (type === 'development') {
+        if (existingApiKey.type === 'development') {
             return await this.createApiDevelopmentKey(userId);
         }
 
-        if (type === 'production') {
+        if (existingApiKey.type === 'production') {
             return await this.createApiProductionKey(userId);
         }
+        return null;
     }
 
     static async createApiKey(apiKeyData: {
