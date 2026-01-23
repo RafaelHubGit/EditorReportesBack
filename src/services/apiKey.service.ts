@@ -54,9 +54,12 @@ export class ApiKeyService {
         return await this.apiKeyRepository.findOneBy({ api_key: apiKey });
     }
 
-    static async getApiKeyByUserId(userId: string) {
+    static async getActiveApiKeysByUserId(userId: string) {
         const apukeys = await this.apiKeyRepository.find({ 
-            where: { user: { id: userId } }
+            where: { 
+                user: { id: userId },
+                isActive: true
+            }
         });
         return apukeys;
     }

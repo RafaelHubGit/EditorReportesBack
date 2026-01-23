@@ -17,7 +17,7 @@ export const apiKeyResolvers = {
         apiKey: (parent: any) => parent.api_key,
     },
     Query: {
-        getApiKeyByUserId: async (_: any, context: any) => await ApiKeyService.getApiKeyByUserId(context.userId),
+        getActiveApiKeysByUserId: async (_: any, context: any) => await ApiKeyService.getActiveApiKeysByUserId(context.userId),
         getApiKeyActiveByType: async (_: any, context: any) => await ApiKeyService.getApiKeyActiveByType(context.type),
     },
     Mutation: {

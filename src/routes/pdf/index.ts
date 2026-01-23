@@ -7,7 +7,7 @@ const router = Router();
 
 // POST /api/pdf/generate
 // router.post('/generate', validateApiKey, generatePDF);
-router.post('/generate', generatePDF);
+router.post('/generatePdf', generatePDF);
 
 // GET /api/pdf/templates (opcional, para listar templates disponibles)
 // router.get('/templates', validateApiKey, (req, res) => {

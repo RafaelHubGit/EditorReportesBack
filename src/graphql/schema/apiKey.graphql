@@ -10,6 +10,7 @@ type ApiKey {
     apiKey: String!
     createdAt: String!
     updatedAt: String!
+    is_active: Boolean!
 }
 
 input ApiKeyInput {
@@ -22,7 +23,7 @@ input ApiKeyRenewInput {
 }
 
 extend type Query {
-    getApiKeyByUserId(userId: String!): [ApiKey]
+    getActiveApiKeysByUserId(userId: String!): [ApiKey]
     getApiKeyActiveByType(type: ApiKeyType!): ApiKey
 }
 
