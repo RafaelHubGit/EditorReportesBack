@@ -13,8 +13,8 @@ export interface GeneratePDFRequest {
 export interface GeneratePDFResponse {
   success: boolean;
   pdfUrl?: string | undefined;
-  pdfBuffer?: string | undefined; // Base64 si prefieres
-  documentId: string;
+  pdfBase64?: string | undefined; // Base64 si prefieres
+  documentId?: string;
   timestamp: string;
   message?: string | undefined;
   error?: string | undefined;

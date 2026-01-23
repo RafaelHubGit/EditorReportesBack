@@ -6,7 +6,12 @@ import { TemplateService } from "./template.service";
 
 
 
-export const generatePDFService = async ( apikey: string, documentId: string ): Promise<void> => {
+export const generatePDFService = async ( apikey: string, documentId: string ): 
+    Promise<{ 
+        success: boolean, 
+        pdfBase64: string, 
+        message: string 
+}> => {
     
     const apiKeyValidated = await ApiKeyService.validateApiKey(apikey);
 
@@ -25,18 +30,33 @@ export const generatePDFService = async ( apikey: string, documentId: string ): 
 
     const renderedHtml = generateHtml({ html, css, json: data });
 
-    console.log("RENDER HTML : ", renderedHtml);
+    const pdfBase64 = await callPdfApi(renderedHtml);
 
-    // const pdfBuffer = await htmlToPdf(renderedHtml);
+    return {
+        success: true,
+        pdfBase64,
+        message: 'PDF generated successfully'
+    };
+}
 
-    // const pdfUrl = await uploadToS3(pdfBuffer);
+const callPdfApi = async ( html: string ): Promise<string> => {
 
-    // return {
-    //     success: true,
-    //     pdfUrl,
-    //     pdfBuffer,
-    //     documentId,
-    //     timestamp: new Date().toISOString(),
-    //     message: 'PDF generated successfully'
-    // };
+    const fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            html: html
+        })
+    })
+    
+    if (!fetchResponse.ok) {
+        throw new Error('Failed to generate PDF');
+    }
+
+    const response = await fetchResponse.json() as { pdfBase64: string };
+
+    return response.pdfBase64;
+
 }

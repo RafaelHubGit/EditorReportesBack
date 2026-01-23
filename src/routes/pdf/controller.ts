@@ -7,6 +7,9 @@ import { generatePDFService } from '../../services/pdf.service';
 
 
 export const generatePDF = async (req: Request, res: Response): Promise<void> => {
+
+  console.log("ENTRA A GENERATE PDF");
+
     // Get apiKey from request body (POST data)
     const { apiKey, documentId } = req.body;
 
@@ -21,7 +24,16 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    generatePDFService(apiKey, documentId);
+    const result = await generatePDFService(apiKey, documentId);
+
+    const response: GeneratePDFResponse = {
+      success: result.success,
+      timestamp: new Date().toISOString(),
+      message: result.message,
+      pdfBase64: result.pdfBase64
+    };
+
+    res.status(200).json(response);
 
 }
 
