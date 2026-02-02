@@ -8,32 +8,44 @@ import { generatePDFService } from '../../services/pdf.service';
 
 export const generatePDF = async (req: Request, res: Response): Promise<void> => {
 
-  console.log("ENTRA A GENERATE PDF");
-
-    // Get apiKey from request body (POST data)
-    const { apiKey, documentId } = req.body;
-
-    if (!apiKey || !documentId) {
+  try {
+  
+      // Get apiKey from request body (POST data)
+      const { apiKey, documentId } = req.body;
+  
+      if (!apiKey || !documentId) {
+        const response: GeneratePDFResponse = {
+          success: false,
+          documentId: 'unknown',
+          timestamp: new Date().toISOString(),
+          error: 'Missing required fields: apiKey and documentId are required'
+        };
+        res.status(400).json(response);
+        return;
+      }
+  
+      const result = await generatePDFService(apiKey, documentId);
+  
       const response: GeneratePDFResponse = {
-        success: false,
-        documentId: 'unknown',
+        success: result.success,
         timestamp: new Date().toISOString(),
-        error: 'Missing required fields: apiKey and documentId are required'
+        message: result.message,
+        pdfBase64: result.pdfBase64
       };
-      res.status(400).json(response);
-      return;
-    }
+  
+      res.status(200).json(response);
+    
+  } catch (error: any) {
+    // This catches the "Failed to generate PDF" error from your service
+    console.error("❌ PDF Controller Error:", error.message);
 
-    const result = await generatePDFService(apiKey, documentId);
-
-    const response: GeneratePDFResponse = {
-      success: result.success,
+    res.status(500).json({
+      success: false,
       timestamp: new Date().toISOString(),
-      message: result.message,
-      pdfBase64: result.pdfBase64
-    };
+      error: error.message || 'Internal Server Error'
+    });
+  }
 
-    res.status(200).json(response);
 
 }
 

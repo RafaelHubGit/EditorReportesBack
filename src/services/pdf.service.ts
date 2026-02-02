@@ -12,6 +12,8 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
         pdfBase64: string, 
         message: string 
 }> => {
+
+    
     
     const apiKeyValidated = await ApiKeyService.validateApiKey(apikey);
 
@@ -28,9 +30,11 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
     let css = document.css;
     const data = document.sampleData;
 
+    
+
     // Watermark Injection Logic
     if (apiKeyValidated.type === "development") {
-        console.log("Watermark Injection Logic");
+        
         const watermarkCss = `
             body::before {
                 content: "DEVELOPMENT";
@@ -50,9 +54,15 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
         css += watermarkCss;
     }
 
+
+    
     const renderedHtml = generateHtml({ html, css, json: data });
 
+    
+
     const pdfBase64 = await callPdfApi(renderedHtml);
+
+    
 
     return {
         success: true,
