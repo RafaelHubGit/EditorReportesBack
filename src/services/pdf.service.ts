@@ -25,8 +25,30 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
     }
 
     const html = document.html;
-    const css = document.css;
+    let css = document.css;
     const data = document.sampleData;
+
+    // Watermark Injection Logic
+    if (apiKeyValidated.type === "development") {
+        console.log("Watermark Injection Logic");
+        const watermarkCss = `
+            body::before {
+                content: "DEVELOPMENT";
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 100px;
+                color: rgba(200, 200, 200, 0.3);
+                z-index: 9999;
+                pointer-events: none;
+                white-space: nowrap;
+                font-family: sans-serif;
+                font-weight: bold;
+            }
+        `;
+        css += watermarkCss;
+    }
 
     const renderedHtml = generateHtml({ html, css, json: data });
 
