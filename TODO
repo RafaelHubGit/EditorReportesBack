@@ -1,33 +1,16 @@
 
 
 
-1. (Front) Boton de Generar APIKeys, 
-   1.1. Al entrar a esta ventana, si detecta que no tiene apikeys, debe generarlas en automatico
-   1.2. Debe haber dos apiKys una para dev el cual lanza los pdfs con marca de agua y el otro para prod el cual lanza los pdfs sin marca de agua
-   1.3. Debe tener un boton de copiar apikey
-   1.4. Debe tener un boton de eliminar apikey
-   1.5. Debe tener un boton de generar nuevo apikey (para cada una de las apikeys y poder renovarlas)
-      1.5.1. Debe mostrar un mensaje que pregunte si en verdad desea generar un nuevo apikey, de ser asi, las peticiones que usen esa apikey se quedarán invalidadas
-2. (Back) 
-   2.1. endpoint (graphQL) que genere las apikeys
-   2.2. endpoint (graphQL) que Cambie el estatus de las apikeys. 
-
-1. enviar desde el front la peticion para crear el pdf
-   1.1. debe enviar el documentId
-   1.2. debe enviar la data
-   1.3. debe enviar el options ?
-2. hacer las validaciones en el controlleer
-   2.1. debe validar que el documentId sea valido
-   2.2. debe validar que el data sea valido
-   2.3. debe validar que el options sea valido
-3. Crear el servicio del pdf 
-   3.1. debe obtener la plantilla
-   3.2. debe generar el codigo html, juntando el css y pasando la data al html
-4. hacer la llamada al servicio de pdf
-   4.1. Mejorar el servicio de pdf
+SEGURIDAD!!!
+1. Validar el tamaño del documento que se va a recibir tanto el html, css y json
+2. validacion de html css y json con DOMPurify + jsdom
+2. Cuando se realice la solicitur de informacion validar que con DOMPurify + jsdom el JSON (checar que se pueda) que no genere informacion infinita
 
 
+***
+1. Generar un dto para el servicio de pdf
+2. validar con zod lo que se esta recibiendo del front
 
-SERVICIO DE PDF
-1. recibir el html, css
-2. cuales van a ser las opciones que va a recibir? 
+
+1. Modificar como se guarda la informacion, se debe separar el html css del header y footer, para que se guarden tambien
+2. agregar la marca de agua cuando sea token de prueba
