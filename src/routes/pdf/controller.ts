@@ -24,7 +24,7 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
         return;
       }
   
-      const result = await generatePDFService(apiKey, documentId);
+      const result = await generatePDFService(apiKey);
   
       const response: GeneratePDFResponse = {
         success: result.success,

@@ -1,21 +1,23 @@
 
+import { GeneratePDFDto, PdfOptionsDto } from "../dto/pdf-generation.dto";
 import { generateHtml } from "../utils/generateHtml";
+import { SecurityService } from "../utils/security";
 import { ApiKeyService } from "./apiKey.service";
 import { TemplateService } from "./template.service";
 
 
 
 
-export const generatePDFService = async ( apikey: string, documentId: string ): 
-    Promise<{ 
+// export const generatePDFService = async ( apikey: string, documentId: string ): 
+export const generatePDFService = async ( payload: GeneratePDFDto ): Promise<{ 
         success: boolean, 
         pdfBase64: string, 
         message: string 
 }> => {
 
-    
-    
-    const apiKeyValidated = await ApiKeyService.validateApiKey(apikey);
+    const { apiKey, documentId, data, pdfOptions } = payload;
+
+    const apiKeyValidated = await ApiKeyService.validateApiKey(apiKey);
 
     if (!apiKeyValidated) {
         throw new Error('Invalid API key');
@@ -26,11 +28,16 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
         throw new Error('Document not found');
     }
 
-    const html = document.html;
-    let css = document.css;
-    const data = document.sampleData;
-
-    
+    const cleanBodyHtml = SecurityService.sanitizeContent(document.html);
+    // Sanitizamos Header y Footer si vienen en las opciones
+    if (pdfOptions?.headerTemplate) {
+        pdfOptions.headerTemplate = SecurityService.sanitizeContent(pdfOptions.headerTemplate);
+    }
+    if (pdfOptions?.footerTemplate) {
+        pdfOptions.footerTemplate = SecurityService.sanitizeContent(pdfOptions.footerTemplate);
+    }
+    // let css = document.css;
+    // const data = document.sampleData;
 
     // Watermark Injection Logic
     if (apiKeyValidated.type === "development") {
@@ -51,16 +58,20 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
                 font-weight: bold;
             }
         `;
-        css += watermarkCss;
+        document.css += watermarkCss;
     }
 
 
     
-    const renderedHtml = generateHtml({ html, css, json: data });
+    const renderedHtml = generateHtml({ 
+        html: cleanBodyHtml, 
+        css: document.css, 
+        json: data 
+    });
 
     
 
-    const pdfBase64 = await callPdfApi(renderedHtml);
+    const pdfBase64 = await callPdfApi(renderedHtml, pdfOptions);
 
     
 
@@ -71,7 +82,7 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
     };
 }
 
-const callPdfApi = async ( html: string ): Promise<string> => {
+const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<string> => {
 
     // 1. Crear un controlador para abortar la petición
     const controller = new AbortController();
@@ -87,7 +98,8 @@ const callPdfApi = async ( html: string ): Promise<string> => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                html: html  
+                html: html,
+                pdfOptions: options 
             }),
             signal: controller.signal
         })
