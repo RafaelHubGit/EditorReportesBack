@@ -1,6 +1,7 @@
 // generateHtml.ts
 import Handlebars from 'handlebars';
 import { setupHandlebarsHelpers } from '../helpers/handlebars.helpers';
+import { SecurityService } from './security';
 
 export interface GenerateHtmlOptions {
   html: string;
@@ -10,16 +11,21 @@ export interface GenerateHtmlOptions {
 
 export const generateHtml = ({ html, css, json }: GenerateHtmlOptions): string => {
   try {
-    // 1. Configurar los helpers de Handlebars
+
+    //Validar y Sanitizar entradas
+    SecurityService.validateJsonData(json);
+    const cleanHtml = SecurityService.sanitizeContent(html);
+
+    //Configurar los helpers de Handlebars
     setupHandlebarsHelpers();
 
-    // 2. Preparar los datos JSON (añadir campos calculados)
+    //Preparar los datos JSON (añadir campos calculados)
     const preparedData = prepareData(json);
 
-    // 3. Combinar HTML con CSS
-    const fullHtml = combineHtmlWithCss(html, css);
+    //Combinar HTML con CSS
+    const fullHtml = combineHtmlWithCss(cleanHtml, css);
 
-    // 4. Compilar y renderizar el template
+    //Compilar y renderizar el template
     const template = Handlebars.compile(fullHtml);
     const renderedHtml = template(preparedData);
 

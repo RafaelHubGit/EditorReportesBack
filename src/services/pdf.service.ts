@@ -73,22 +73,43 @@ export const generatePDFService = async ( apikey: string, documentId: string ):
 
 const callPdfApi = async ( html: string ): Promise<string> => {
 
-    const fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            html: html
+    // 1. Crear un controlador para abortar la petición
+    const controller = new AbortController();
+
+    // 2. Configurar un timeout de 30 segundos
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    try {
+
+        const fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                html: html  
+            }),
+            signal: controller.signal
         })
-    })
-    
-    if (!fetchResponse.ok) {
-        throw new Error('Failed to generate PDF');
+        
+        if (!fetchResponse.ok) {
+            throw new Error('Failed to generate PDF');
+        }
+
+        const response = await fetchResponse.json() as { pdfBase64: string };
+
+        return response.pdfBase64;
+
+
+    } catch (error: any) {
+        if (error.name === 'AbortError') {
+            throw new Error('PDF generation timed out after 30 seconds');
+        }
+        throw error;
+    } finally {
+        // 3. Limpiar el temporizador siempre
+        clearTimeout(timeout);
     }
-
-    const response = await fetchResponse.json() as { pdfBase64: string };
-
-    return response.pdfBase64;
+    
 
 }

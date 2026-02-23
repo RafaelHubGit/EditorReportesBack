@@ -38,6 +38,7 @@
         "passport-local": "^1.0.0",
         "pg": "^8.16.3",
         "reflect-metadata": "^0.2.2",
+        "sanitize-html": "^2.17.1",
         "to-json-schema": "^0.2.5",
         "typeorm": "^0.3.27",
         "uuid": "^13.0.0"
@@ -54,6 +55,7 @@
         "@types/passport-jwt": "^3.0.13",
         "@types/passport-local": "^1.0.38",
         "@types/pg": "^8.15.5",
+        "@types/sanitize-html": "^2.16.0",
         "@types/to-json-schema": "^0.2.4",
         "@typescript-eslint/eslint-plugin": "^6.9.1",
         "@typescript-eslint/parser": "^6.9.1",

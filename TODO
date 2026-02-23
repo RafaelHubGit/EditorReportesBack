@@ -3,8 +3,8 @@
 
 SEGURIDAD!!!
 1. Validar el tamaño del documento que se va a recibir tanto el html, css y json
-2. validacion de html css y json con DOMPurify + jsdom
-2. Cuando se realice la solicitur de informacion validar que con DOMPurify + jsdom el JSON (checar que se pueda) que no genere informacion infinita
+
+
 
 
 ***
@@ -14,3 +14,7 @@ SEGURIDAD!!!
 
 1. Modificar como se guarda la informacion, se debe separar el html css del header y footer, para que se guarden tambien
 2. agregar la marca de agua cuando sea token de prueba
+
+
+
+***Asegúrate de que los helpers registrados en setupHandlebarsHelpers no tengan acceso a funciones globales del sistema o al sistema de archivos.
