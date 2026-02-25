@@ -40,6 +40,6 @@ export async function checkPostgreSQLHealth() {
         client.release();
         return { status: 'healthy', timestamp: result.rows[0].current_time };
     } catch (error) {
-        return { status: 'unhealthy', error: error.message };
+        return { status: 'unhealthy', error };
     }
 }

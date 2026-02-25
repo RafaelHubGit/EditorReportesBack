@@ -1,20 +1,15 @@
 
 
-
 SEGURIDAD!!!
 1. Validar el tamaño del documento que se va a recibir tanto el html, css y json
 
 
 
 
-***
-1. Generar un dto para el servicio de pdf ###
-2. validar con zod lo que se esta recibiendo del front
-
-
-1. Modificar como se guarda la informacion, se debe separar el html css del header y footer, para que se guarden tambien
-2. agregar la marca de agua cuando sea token de prueba
-
-
-
 ***Asegúrate de que los helpers registrados en setupHandlebarsHelpers no tengan acceso a funciones globales del sistema o al sistema de archivos.
+
+
+
+siguiente!!!!  (puede quedar para fase 2???)
+7. Inyección de imágenes (Base64)
+debe descargar las imagenes que van como url y convertirlas a base64 y meterlas en el html

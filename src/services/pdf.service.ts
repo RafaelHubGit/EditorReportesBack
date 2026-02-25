@@ -1,5 +1,5 @@
 
-import { GeneratePDFDto, PdfOptionsDto } from "../dto/pdf-generation.dto";
+import { GeneratePDFDto, PdfOptionsDto, PdfOptionsDtoSchema } from "../dto/pdf-generation.dto";
 import { generateHtml } from "../utils/generateHtml";
 import { SecurityService } from "../utils/security";
 import { ApiKeyService } from "./apiKey.service";
@@ -9,32 +9,34 @@ import { TemplateService } from "./template.service";
 
 
 // export const generatePDFService = async ( apikey: string, documentId: string ): 
-export const generatePDFService = async ( payload: GeneratePDFDto ): Promise<{ 
+export const generatePDFService = async ( payload: IGeneratePDFService, jsonDataVar?: Record<string, any> ): Promise<{ 
         success: boolean, 
         pdfBase64: string, 
         message: string 
 }> => {
 
-    const { apiKey, documentId, data, pdfOptions } = payload;
+    const { apiKey, documentId } = payload;
 
+    // Validar API Key
     const apiKeyValidated = await ApiKeyService.validateApiKey(apiKey);
-
     if (!apiKeyValidated) {
         throw new Error('Invalid API key');
     }
-    const document = await TemplateService.getTemplateById(documentId);
 
+    // Validar Documento
+    const document = await TemplateService.getTemplateById(documentId);
+    console.log('🔵 Documento encontrado:', document);
     if (!document) {
         throw new Error('Document not found');
     }
 
     const cleanBodyHtml = SecurityService.sanitizeContent(document.html);
     // Sanitizamos Header y Footer si vienen en las opciones
-    if (pdfOptions?.headerTemplate) {
-        pdfOptions.headerTemplate = SecurityService.sanitizeContent(pdfOptions.headerTemplate);
+    if (document.htmlHeader) {
+        document.htmlHeader = SecurityService.sanitizeContent(document.htmlHeader);
     }
-    if (pdfOptions?.footerTemplate) {
-        pdfOptions.footerTemplate = SecurityService.sanitizeContent(pdfOptions.footerTemplate);
+    if (document.htmlFooter) {
+        document.htmlFooter = SecurityService.sanitizeContent(document.htmlFooter);
     }
     // let css = document.css;
     // const data = document.sampleData;
@@ -66,12 +68,29 @@ export const generatePDFService = async ( payload: GeneratePDFDto ): Promise<{
     const renderedHtml = generateHtml({ 
         html: cleanBodyHtml, 
         css: document.css, 
-        json: data 
+        json: jsonDataVar || document.sampleData,
+        headerCss: document.cssHeader,
+        footerCss: document.cssFooter
     });
 
-    
+    const vpageConfig = PdfOptionsDtoSchema.parse(document.pageConfig);
 
-    const pdfBase64 = await callPdfApi(renderedHtml, pdfOptions);
+    // Agregar header y footer si existen
+    if (document.htmlHeader || document.htmlFooter) {
+        vpageConfig.displayHeaderFooter = true;
+        
+        if (document.htmlHeader) {
+            vpageConfig.headerTemplate = document.htmlHeader;
+        }
+        
+        if (document.htmlFooter) {
+            vpageConfig.footerTemplate = document.htmlFooter;
+        }
+    }
+
+
+
+    const pdfBase64 = await callPdfApi(renderedHtml, vpageConfig);
 
     
 
@@ -92,7 +111,9 @@ const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<stri
 
     try {
 
-        const fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
+        let fetchResponse: Response;
+
+        fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -102,10 +123,11 @@ const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<stri
                 pdfOptions: options 
             }),
             signal: controller.signal
-        })
+        });
+        
         
         if (!fetchResponse.ok) {
-            throw new Error('Failed to generate PDF');
+            throw new Error(`Failed to generate PDF: ${fetchResponse.status} - ${JSON.stringify(fetchResponse)}`);
         }
 
         const response = await fetchResponse.json() as { pdfBase64: string };

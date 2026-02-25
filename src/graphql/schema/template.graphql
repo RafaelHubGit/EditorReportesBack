@@ -1,8 +1,53 @@
+
+
+enum TemplateStatus {
+    draft
+    published
+    archived
+}
+
+type PageMargin {
+    top: String
+    right: String
+    bottom: String
+    left: String
+}
+
+input PageMarginInput {
+    top: String
+    right: String
+    bottom: String
+    left: String
+}
+
+input PageConfigInput {
+    format: String
+    unit: String
+    width: Float
+    height: Float
+    landscape: Boolean
+    margin: PageMarginInput
+}
+
+type PageConfig {
+    format: String
+    unit: String
+    width: Float
+    height: Float
+    landscape: Boolean
+    margin: PageMargin
+}
+
 type Template {
     id: ID
     name: String!
     html: String!
     css: String!
+    htmlHeader: String
+    htmlFooter: String
+    cssHeader: String
+    cssFooter: String
+    pageConfig: PageConfig
     jsonSchema: JSON
     sampleData: JSON!
     owner: ID
@@ -26,7 +71,12 @@ input TemplateInput {
     name: String!
     html: String!
     css: String
-    jsonSchema: JSON
+    htmlHeader: String
+    cssHeader: String
+    htmlFooter: String
+    cssFooter: String
+    pageConfig: PageConfigInput
+    # jsonSchema: JSON
     sampleData: JSON!
     folderId: ID
     tags: [String!]
@@ -39,7 +89,12 @@ input TemplateUpdateInput {
     name: String!
     html: String!
     css: String!
-    jsonSchema: JSON
+    htmlHeader: String
+    cssHeader: String
+    htmlFooter: String
+    cssFooter: String
+    pageConfig: PageConfigInput
+    # jsonSchema: JSON
     sampleData: JSON!
     folderId: ID
     tags: [String!]

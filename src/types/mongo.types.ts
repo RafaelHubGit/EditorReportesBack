@@ -5,6 +5,28 @@ export interface ITemplate extends Document {
     name: string;
     html: string;
     css: string;
+
+    // Secciones adicionales añadidas en el modelo
+    htmlHeader: string;
+    cssHeader: string;
+    htmlFooter: string;
+    cssFooter: string;
+
+    // Configuración de Página (Puppeteer)
+    pageConfig: {
+        format: string;
+        unit: string;
+        width: number;
+        height: number;
+        landscape: boolean;
+        margin: {
+            top: string;
+            right: string;
+            bottom: string;
+            left: string;
+        };
+    };
+
     jsonSchema: Record<string, any>;  // Estructura esperada
     sampleData: Record<string, any>;   // Datos de prueba
     owner: ObjectId;                   // Relación con usuario

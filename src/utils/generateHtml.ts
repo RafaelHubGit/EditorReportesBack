@@ -7,9 +7,11 @@ export interface GenerateHtmlOptions {
   html: string;
   css: string;
   json: Record<string, any>;
+  headerCss?: string;
+  footerCss?: string;
 }
 
-export const generateHtml = ({ html, css, json }: GenerateHtmlOptions): string => {
+export const generateHtml = ({ html, css, json, headerCss, footerCss }: GenerateHtmlOptions): string => {
   try {
 
     //Validar y Sanitizar entradas
@@ -23,7 +25,7 @@ export const generateHtml = ({ html, css, json }: GenerateHtmlOptions): string =
     const preparedData = prepareData(json);
 
     //Combinar HTML con CSS
-    const fullHtml = combineHtmlWithCss(cleanHtml, css);
+    const fullHtml = combineHtmlWithCss(cleanHtml, css, headerCss, footerCss);
 
     //Compilar y renderizar el template
     const template = Handlebars.compile(fullHtml);
@@ -64,14 +66,24 @@ const prepareData = (jsonData: Record<string, any>): Record<string, any> => {
   return data;
 };
 
-const combineHtmlWithCss = (html: string, css: string): string => {
+const combineHtmlWithCss = (html: string, css: string, headerCss?: string, footerCss?: string): string => {
+
+   // Construir los estilos completos
+  const styles = [];
+  
+  if (css) styles.push(css);
+  if (headerCss) styles.push(`/* Header Styles */\n${headerCss}`);
+  if (footerCss) styles.push(`/* Footer Styles */\n${footerCss}`);
+
+  const allStyles = styles.join('\n\n');
+
   // Buscar la posición de </head> o <head> en el HTML
   const headEndIndex = html.indexOf('</head>');
   
   if (headEndIndex !== -1) {
     // Insertar CSS antes del cierre de </head>
     return html.slice(0, headEndIndex) + 
-           `<style>${css}</style>` + 
+           `<style>${allStyles}</style>` + 
            html.slice(headEndIndex);
   } else {
     // Si no hay <head>, crear uno básico
@@ -79,7 +91,7 @@ const combineHtmlWithCss = (html: string, css: string): string => {
     if (htmlStartIndex !== -1) {
       const headStartIndex = html.indexOf('>', htmlStartIndex) + 1;
       return html.slice(0, headStartIndex) + 
-             `<head><style>${css}</style></head>` + 
+             `<head><style>${allStyles}</style></head>` + 
              html.slice(headStartIndex);
     } else {
       // Si no hay estructura HTML, envolver en HTML básico
@@ -88,7 +100,7 @@ const combineHtmlWithCss = (html: string, css: string): string => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>${css}</style>
+  <style>${allStyles}</style>
 </head>
 <body>
   ${html}

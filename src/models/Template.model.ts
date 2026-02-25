@@ -19,6 +19,26 @@ const TemplateSchema = new Schema<ITemplate>({
         default: '',
     },
     
+    htmlHeader: {
+        type: String,
+        default: '',
+    },
+    
+    cssHeader: {
+        type: String,
+        default: '',
+    },
+    
+    htmlFooter: {
+        type: String,
+        default: '',
+    },
+    
+    cssFooter: {
+        type: String,
+        default: '',
+    },
+    
     jsonSchema: {
         type: Schema.Types.Mixed,
         required: [true, 'JSON schema is required'],
@@ -27,6 +47,21 @@ const TemplateSchema = new Schema<ITemplate>({
     sampleData: {
         type: Schema.Types.Mixed,
         required: [true, 'Sample data is required'],
+    },
+
+    // Configuración de Página (Puppeteer)
+    pageConfig: {
+        format: { type: String, default: 'A4' }, // A4, Letter, Custom, etc.
+        unit: { type: String, default: 'mm' },   // mm, cm, in, px
+        width: { type: Number },
+        height: { type: Number },
+        landscape: { type: Boolean, default: false }, // vertical (false) horizontal(true)
+        margin: {
+            top: { type: String, default: '10mm' },
+            right: { type: String, default: '10mm' },
+            bottom: { type: String, default: '10mm' },
+            left: { type: String, default: '10mm' }
+        }
     },
     
     owner: {

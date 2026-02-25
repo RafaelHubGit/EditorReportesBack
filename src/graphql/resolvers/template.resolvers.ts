@@ -73,6 +73,7 @@ export const templateResolvers = {
             input.updatedAt = new Date().toISOString();
             input.jsonSchema = {}; //TODO: Implementar, debe de crear el jsonSchema a partir de sampleData
             input.status = 'draft';
+
             return await TemplateService.createTemplate({
                 ...input,
                 owner: userId,
@@ -81,6 +82,7 @@ export const templateResolvers = {
 
         updateTemplate: requireAuth(async (_: any, { id, input }: { id: string; input: any }, context: any) => {
             const userId = context.user.id;
+
             return await TemplateService.updateTemplate(id, userId, input);
         }),
 
