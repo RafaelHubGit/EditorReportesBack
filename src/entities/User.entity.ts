@@ -47,6 +47,12 @@ export class User {
     })
     refresh_token_hash?: string;
 
+    @Column({
+        type: 'boolean',
+        default: true
+    })
+    active!: boolean;
+
     @CreateDateColumn({ 
         type: 'timestamp' 
     })
@@ -56,6 +62,8 @@ export class User {
         type: 'timestamp' 
     })
     updated_at!: Date;
+
+    
 
     @OneToMany(() => ApiKey, (apiKey) => apiKey.user)
     apiKeys!: ApiKey[];
