@@ -3,6 +3,7 @@ import { GeneratePDFDto, PdfOptionsDto, PdfOptionsDtoSchema } from "../dto/pdf-g
 import { generateHtml } from "../utils/generateHtml";
 import { SecurityService } from "../utils/security";
 import { ApiKeyService } from "./apiKey.service";
+import { RateLimitService } from "./rateLimit.service";
 import { TemplateService } from "./template.service";
 
 
@@ -21,6 +22,25 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
     const apiKeyValidated = await ApiKeyService.validateApiKey(apiKey);
     if (!apiKeyValidated) {
         throw new Error('Invalid API key');
+    }
+
+    // Usamos el ID de la API Key o la llave misma como identificador único
+    const LIMIT_PER_HOUR = Number(process.env.PDF_LIMIT_PER_HOUR) || 500;
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+
+    const rateLimit = RateLimitService.checkAndIncrement(
+        apiKey, 
+        LIMIT_PER_HOUR, 
+        ONE_HOUR_MS
+    );
+
+    if (!rateLimit.allowed) {
+        // Lanzamos un error específico que tu controlador pueda atrapar
+        // para devolver el status 429
+        const error: any = new Error(`Rate limit exceeded. Try again in ${rateLimit.retryAfter} seconds.`);
+        error.status = 429;
+        error.retryAfter = rateLimit.retryAfter;
+        throw error;
     }
 
     // Validar Documento
