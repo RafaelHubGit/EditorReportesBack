@@ -53,6 +53,12 @@ export class User {
     })
     active!: boolean;
 
+    @Column({
+        type: 'boolean',
+        default: false
+    })
+    isAdmin!: boolean;
+
     @CreateDateColumn({ 
         type: 'timestamp' 
     })
