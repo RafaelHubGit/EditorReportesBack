@@ -4,3 +4,6 @@ dist/
 .DS_Store
 *.log
 docker-data/
+
+# Rate limit database
+rate_limit.db

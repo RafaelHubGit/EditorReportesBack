@@ -26,11 +26,16 @@ input RefreshTokenInput {
     refreshToken: String!
 }
 
+extend type User {
+    active: Boolean!
+}
+
 extend type Query {
     me: User
     users: [User!]!
     user(id: ID!): User
 }
+
 
 extend type Mutation {
     register(input: RegisterInput!): User
@@ -39,4 +44,9 @@ extend type Mutation {
     updateUser(input: UpdateUserInput!): User!
     deleteUser: Boolean!
     changePassword(oldPassword: String!, newPassword: String!): Boolean!
+
+    # Alterna entre activado y desactivado
+    toggleUserStatus(id: ID!, active: Boolean!): User!
+    # Reestablece contraseña
+    resetUserPassword(id: ID!): Boolean!
 }

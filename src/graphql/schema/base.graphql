@@ -22,6 +22,7 @@ type User {
     id: ID
     email: String!
     name: String!
+    active: Boolean!
     createdAt: String
 }
 

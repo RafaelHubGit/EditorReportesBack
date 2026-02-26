@@ -51,5 +51,14 @@ export const userResolvers = {
         }, context: any) => {
             return await UserService.changePassword(context.user.id, oldPassword, newPassword);
         }),
+
+        toggleUserStatus: requireAuth(async (_: any, { id, active }: { id: string, active: boolean }) => {
+            return await UserService.toggleUserStatus(id, active);
+        }),
+
+        resetUserPassword: requireAuth(async (_: any, { id }: { id: string }) => {
+            return await UserService.resetUserPassword(id);
+        }),
+
     }
 };

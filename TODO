@@ -1,7 +1,6 @@
 
 
-En el SaaS: Limitas por IP o por API Key. Si se pasan de 50 PDFs por hora, devuelves un 429 Too Many Requests.
-En el Local: Quizás no lo necesiten, pero déjalo configurable en el .env.
+
 
 El panel de admin
 Botón de "Reset Password" (que genere una clave temporal tipo Cambiar123!).

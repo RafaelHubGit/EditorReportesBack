@@ -92,7 +92,7 @@ export class UserService {
 
     static async getAllUsers() {
         return await this.userRepository.find({
-            select: ['id', 'email', 'name', 'created_at', 'updated_at']
+            select: ['id', 'email', 'name', 'active', 'created_at', 'updated_at']
         });
     }
 
@@ -202,4 +202,35 @@ export class UserService {
             throw new Error('Invalid refresh token');
         }
     }
+
+    static async toggleUserStatus(userId: string, active: boolean ) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Invertimos el estado actual
+        user.active = active;
+        await this.userRepository.save(user);
+
+        return user;
+    }
+
+    static async resetUserPassword(userId: string) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // "contrasena123" con el salt de 12 definido en tu servicio
+        const defaultPassword = process.env.DEFAULT_USER_PASSWORD || 'contrasena123';
+        user.password_hash = await bcrypt.hash(defaultPassword, 12);
+        
+        await this.userRepository.save(user);
+        return true;
+    }
+
+    
 }
