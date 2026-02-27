@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/typeorm.config';
 import { User } from '../entities/User.entity';
@@ -230,6 +231,40 @@ export class UserService {
         
         await this.userRepository.save(user);
         return true;
+    }
+
+    static async generateAutoAdmin() {
+
+        const adminExists = await this.userRepository.findOne({ 
+            where: { isAdmin: true } 
+        });
+
+        if (adminExists) {
+            throw new Error('Forbidden: System already has an administrator');
+        }
+
+        const randomHex = crypto.randomBytes(3).toString('hex');
+        const tempEmail = `admin_${randomHex}@local.test`;
+        const tempPass = crypto.randomBytes(12).toString('base64').replace(/[/+=]/g, 'X');
+
+        const hashedPassword = await bcrypt.hash(tempPass, 12);
+
+        // Solo usamos los campos presentes en tu User.entity.ts
+        const admin = this.userRepository.create({
+            email: tempEmail,
+            password_hash: hashedPassword,
+            name: 'Initial Setup Admin',
+            isAdmin: true, // Campo real según tu archivo
+            active: true
+        });
+
+        await this.userRepository.save(admin);
+
+        return {
+            instructions: "COPY NOW. Credential loss requires manual DB intervention.",
+            email: tempEmail,
+            password: tempPass
+        };
     }
 
     
