@@ -28,6 +28,8 @@ input RefreshTokenInput {
 
 extend type User {
     active: Boolean!
+    is_verified: Boolean!
+    daysUntilDeletion: Int
 }
 
 extend type Query {
@@ -49,4 +51,10 @@ extend type Mutation {
     toggleUserStatus(id: ID!, active: Boolean!): User!
     # Reestablece contraseña
     resetUserPassword(id: ID!): Boolean!
+
+    # Inicia el proceso de recuperación enviando un correo con un link/token
+    requestPasswordRecovery(email: String!): Boolean!
+    resetPasswordWithToken(token: String!, newPassword: String!): Boolean!
+
+    verifyEmail(token: String!): Boolean!
 }

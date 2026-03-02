@@ -1,9 +1,34 @@
 
 
+***** Implementar altcha
+
+*** implementar  cron job para eliminar los tokens expirados
+npm install node-cron
+
+Implementa un proceso de limpieza automático (Cron Job) que elimine cuentas que tengan más de 7 días creadas y sigan con is_verified: false. Esto mantiene tu base de datos limpia y eficiente.
 
 
-El panel de admin
-Botón de "Reset Password" (que genere una clave temporal tipo Cambiar123!).
+0. Cmabio de contraseña 
+0.1. El usuario debe enviar contraseña "actual" y "nueva" y "confirmacion de nueva" 
+0.2. debe hacer la validacion de la contraseña actual y si pasa se actualiza la contraseña
+0.3. en el caso que no pase la validacion de la contraseña actual, se debe retornar un error
+
+1. cooldown de 2 minutos
+1.1. Condultar la bd con el registro mas reciente de ese user_id con tipo password_recovery, el tiempo de expiracion debe ser 15/20 minutos
+1.2. Si se pide un nuevo token antes de que expire el anterior, se debe bloquear la peticion y retornar al front un mensaje diciendo que el usuario debe esperar 2 minutos para solicitar un nuevo token
+
+2. Usuario 
+***2.1. Agregar columnas is_blocked y blocked_until a la tabla users
+2.2. si el conteo de tokens en las ultimas 24 horas supera los 10 por ejemplo, se hace un update al usuario y se bloquea por 24 horas y se disapara un correo con alerta de seguridad
+
+
+4. Cambio de contraseña
+4.1. Cuando el usuario cambia su contraseña, se debe eliminar el token de la tabla user_auth_tokens
+
+
+
+
+
 
 
 ENVIO DE CORREOS ELECTRONICOS   

@@ -4,10 +4,15 @@ import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/typeorm.config';
 import { User } from '../entities/User.entity';
 import { generateTokens, isRefreshTokenValid, saveHashRefreshTokenToUser } from '../helpers/user.helpers';
+import { AuthTokenType, UserAuthToken } from '../entities/UserAuthToken.entity';
+import { IsNull, MoreThan } from 'typeorm';
+import { sendVerificationEmail } from './mail/templates/verification';
+import { user } from '@getbrevo/brevo/dist/cjs/api';
 
 
 export class UserService {
     private static userRepository = AppDataSource.getRepository(User);
+    private static tokenRepository = AppDataSource.getRepository(UserAuthToken);
 
     static async createUser(userData: {
         email: string;
@@ -37,6 +42,8 @@ export class UserService {
 
         await this.userRepository.save(user);
 
+        await this.generateEmailVerificationToken(user.id);
+
         // Eliminar password del objeto retornado
         const { password_hash, ...userWithoutPassword } = user;
         return userWithoutPassword;
@@ -51,9 +58,34 @@ export class UserService {
             throw new Error('Invalid credentials');
         }
 
+        // Primero validamos si el usuario está bloqueado por los 3 intentos (24h)
+        if (user.is_blocked && user.blocked_until && user.blocked_until > new Date()) {
+            throw new Error(`Cuenta bloqueada temporalmente. Intenta después de: ${user.blocked_until.toLocaleString()}`);
+        }
+
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
         if (!isValidPassword) {
             throw new Error('Invalid credentials');
+        }
+
+        if (!user.is_verified) {
+            // Calculamos cuántos días faltan para borrarlo (ejemplo: 7 días desde created_at)
+            const DAYS_TO_DELETE = 7;
+            const expirationDate = new Date(user.created_at);
+            expirationDate.setDate(expirationDate.getDate() + DAYS_TO_DELETE);
+            
+            const now = new Date();
+            const diffTime = expirationDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // Lado B: Si ya pasaron los 7 días y no se verificó, podrías borrarlo aquí 
+            // o lanzar un error específico para que el Front sepa qué mostrar.
+            if (diffDays <= 0) {
+                throw new Error('Tu cuenta ha expirado por falta de verificación y será eliminada.');
+            }
+
+            // Devolvemos una respuesta especial o un flag para que el Front muestre el Alert
+            // Nota: Seguimos permitiendo el login (opcional) pero con la advertencia
         }
 
         // Generar tokens
@@ -265,6 +297,199 @@ export class UserService {
             email: tempEmail,
             password: tempPass
         };
+    }
+
+    static async requestPasswordRecovery(email: string): Promise<boolean> {
+        // 1.1. Validación de Existencia
+        const user = await this.userRepository.findOne({ where: { email } });
+        
+        // Lado B: Si no existe, retornamos true para evitar enumeración de usuarios [cite: 10]
+        if (!user) return true;
+
+        // 1.2. Verificación de Bloqueo Previo [cite: 11]
+        if (user.is_blocked) {
+            if (user.blocked_until && user.blocked_until > new Date()) {
+                throw new Error(`Cuenta bloqueada. Intenta después de: ${user.blocked_until.toLocaleString()}`);
+            } else {
+                // Si el tiempo de bloqueo ya pasó, lo desbloqueamos para este nuevo intento 
+                user.is_blocked = false;
+                await this.userRepository.save(user);
+            }
+        }
+
+        // 1.4. Conteo de Seguridad (Ventana de 24h) [cite: 15]
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const recoveryAttempts = await this.tokenRepository.count({
+            where: {
+                user_id: user.id,
+                type: AuthTokenType.PASSWORD_RECOVERY,
+                created_at: MoreThan(twentyFourHoursAgo)
+            }
+        });
+
+        const maxAttempts = parseInt(process.env.MAX_RECOVERY_ATTEMPTS_24H || '3');
+
+        if (recoveryAttempts >= maxAttempts) {
+            // Bloqueo por 24 horas [cite: 16]
+            user.is_blocked = true;
+            user.blocked_until = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await this.userRepository.save(user);
+
+            // *** DISPARAR CORREO DE ALERTA DE SEGURIDAD AQUÍ *** [cite: 17, 18]
+            console.log(`ALERTA: Correo de seguridad enviado a ${user.email}`);
+            
+            throw new Error('Demasiados intentos. Tu cuenta ha sido bloqueada por 24 horas por seguridad.');
+        }
+
+        // 1.3. Control de Spam (Cooldown de 2 min) [cite: 13]
+        const lastToken = await this.tokenRepository.findOne({
+            where: { user_id: user.id, type: AuthTokenType.PASSWORD_RECOVERY },
+            order: { created_at: 'DESC' }
+        });
+
+        if (lastToken && (Date.now() - lastToken.created_at.getTime()) < 120000) {
+            throw new Error('Debes esperar 2 minutos para solicitar un nuevo token.'); // [cite: 14]
+        }
+
+        // 1.9. Generación del Token [cite: 19]
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); // [cite: 20]
+
+        const expirationDate = new Date();
+        expirationDate.setMinutes(expirationDate.getMinutes() + 20); // Expiración de 20 min [cite: 20]
+
+        const newToken = this.tokenRepository.create({
+            token_hash: tokenHash,
+            type: AuthTokenType.PASSWORD_RECOVERY,
+            expires_at: expirationDate,
+            user_id: user.id
+        });
+
+        await this.tokenRepository.save(newToken);
+
+        // 1.21. Envío de Correo [cite: 21]
+        // Link: https://tuapp.com/reset?token=${rawToken}
+        console.log(`DEBUG: Link enviado -> https://tuapp.com/reset?token=${rawToken}`);
+
+        return true;
+    }
+
+    static async resetPasswordWithToken(rawToken: string, newPassword: string): Promise<boolean> {
+        // 2.1. Búsqueda del Token: Generamos el hash del token recibido para buscarlo
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); 
+
+        const tokenRecord = await this.tokenRepository.findOne({
+            where: { 
+                token_hash: tokenHash,
+                type: AuthTokenType.PASSWORD_RECOVERY 
+            },
+            relations: ['user'] // Traemos al usuario asociado
+        });
+
+        // 2.3. Validación de Vigencia
+        if (!tokenRecord) {
+            throw new Error('Token inválido o inexistente.'); 
+        }
+
+        if (tokenRecord.used_at) {
+            throw new Error('Este token ya ha sido utilizado.'); 
+        }
+
+        if (tokenRecord.expires_at < new Date()) {
+            throw new Error('El token ha expirado (límite de 20 minutos).'); 
+        }
+
+        // 2.5. Procesamiento
+        const user = await this.userRepository.findOne({ where: { id: tokenRecord.user_id } });
+        if (!user) throw new Error('Usuario no encontrado.');
+
+        // Hasheamos la nueva contraseña (usando el salt de 12 de tu servicio)
+        user.password_hash = await bcrypt.hash(newPassword, 12); 
+        
+        // Si estaba bloqueado, lo desbloqueamos al cambiar exitosamente la clave
+        user.is_blocked = false;
+        user.blocked_until = null as any;
+
+        await this.userRepository.save(user); 
+
+        // 2.6. Invalidadación: Marcamos el token actual como usado
+        tokenRecord.used_at = new Date(); 
+        await this.tokenRepository.save(tokenRecord);
+
+        // Opcional: Invalidar todos los demás tokens pendientes del mismo tipo para este usuario
+        await this.tokenRepository.update(
+            { 
+                user_id: user.id, 
+                type: AuthTokenType.PASSWORD_RECOVERY, 
+                used_at: IsNull() 
+            },
+            { used_at: new Date() } // O podrías usar una columna 'revoked'
+        ); 
+
+        return true;
+    }
+
+    private static async generateEmailVerificationToken(userId: string) {
+
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) return;
+
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        const newToken = this.tokenRepository.create({
+            token_hash: tokenHash,
+            type: AuthTokenType.EMAIL_VERIFICATION, // Usamos el tipo correspondiente
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas para verificar
+            user_id: userId
+        });
+
+        await this.tokenRepository.save(newToken);
+        
+        // 2. Construir la liga usando variables de entorno [cite: 21]
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationLink = `${frontendUrl}/verify-email?token=${rawToken}`;
+
+        console.log(verificationLink);
+
+        // 3. ENVIAR EL CORREO REAL
+        await sendVerificationEmail({
+            toEmail: user.email,
+            toName: user.name,
+            link: verificationLink,
+            expiresInMinutes: 1440 // 24 horas en minutos
+        });
+    }
+
+
+    static async verifyEmail(rawToken: string): Promise<boolean> {
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+        const tokenRecord = await this.tokenRepository.findOne({
+            where: { 
+                token_hash: tokenHash,
+                type: AuthTokenType.EMAIL_VERIFICATION,
+                used_at: IsNull() // Usamos IsNull() para evitar el error de tipos previo
+            },
+            relations: ['user']
+        });
+
+        if (!tokenRecord || tokenRecord.expires_at < new Date()) {
+            throw new Error('Token inválido o expirado.');
+        }
+
+        const user = tokenRecord.user;
+        
+        // Acción Final: Cambiar is_verified a true 
+        user.is_verified = true;
+        user.active = true; // Aseguramos que la cuenta esté activa
+        await this.userRepository.save(user);
+
+        // Marcar token como usado [cite: 25]
+        tokenRecord.used_at = new Date();
+        await this.tokenRepository.save(tokenRecord);
+
+        return true;
     }
 
     

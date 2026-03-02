@@ -6,6 +6,20 @@ export const userResolvers = {
     User: {
         createdAt: (parent: any) => parent.created_at,
         updatedAt: (parent: any) => parent.updated_at,
+        daysUntilDeletion: (parent: any) => {
+            if (parent.is_verified) return null; // Si ya está verificado, no hay cuenta regresiva
+
+            const DAYS_TO_DELETE = 7; // Mismo valor que usaremos en el Cron Job
+            const creationDate = new Date(parent.created_at);
+            const expirationDate = new Date(creationDate);
+            expirationDate.setDate(creationDate.getDate() + DAYS_TO_DELETE);
+            
+            const now = new Date();
+            const diffTime = expirationDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays > 0 ? diffDays : 0; // Si ya expiró, regresamos 0
+        },
     },
 
     Query: {
@@ -59,6 +73,14 @@ export const userResolvers = {
         resetUserPassword: requireAuth(async (_: any, { id }: { id: string }) => {
             return await UserService.resetUserPassword(id);
         }),
+
+        requestPasswordRecovery: async (_: any, { email }: { email: string }) => {
+            return await UserService.requestPasswordRecovery(email);
+        },
+
+        verifyEmail: async (_: any, { token }: { token: string }) => {
+            return await UserService.verifyEmail(token);
+        },
 
     }
 };

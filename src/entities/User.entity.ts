@@ -8,6 +8,7 @@ import {
     OneToMany
 } from 'typeorm';
 import { ApiKey } from './ApiKey.entity';
+import { UserAuthToken } from './UserAuthToken.entity';
 
 @Entity('users')
 export class User {
@@ -59,6 +60,24 @@ export class User {
     })
     isAdmin!: boolean;
 
+    @Column({
+        type: 'boolean',
+        default: false
+    })
+    is_blocked!: boolean;
+
+    @Column({
+        type: 'timestamp',
+        nullable: true
+    })
+    blocked_until!: Date;
+
+    @Column({
+        type: 'boolean',
+        default: false
+    })
+    is_verified!: boolean;
+
     @CreateDateColumn({ 
         type: 'timestamp' 
     })
@@ -73,4 +92,6 @@ export class User {
 
     @OneToMany(() => ApiKey, (apiKey) => apiKey.user)
     apiKeys!: ApiKey[];
+    @OneToMany(() => UserAuthToken, (authToken) => authToken.user)
+    authTokens!: UserAuthToken[];
 }

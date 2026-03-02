@@ -1,0 +1,59 @@
+1. Solicitud de Recuperación (Trigger)
+    Cuando el usuario ingresa su correo en la pantalla de "Olvidé mi contraseña":
+
+    1.1.Validación de Existencia: Se busca el correo en la base de datos.
+
+    1.2.Verificación de Bloqueo Previo:
+        Se revisa si is_blocked es true.
+        Si es true, se verifica si blocked_until ya expiró. Si aún no expira, se rechaza la petición con error.
+
+    1.3.Control de Spam (Cooldown de 2 min):
+        Se busca el último token de tipo PASSWORD_RECOVERY creado para ese usuario.
+        Si fue creado hace menos de 2 minutos, se bloquea la petición y se indica que espere 2 minutos para solicitar un nuevo token.
+
+    1.4.Conteo de Seguridad (Ventana de 24h):
+        Se cuentan todos los tokens de recuperación creados para ese usuario en las últimas 24 horas.
+        Si el conteo es >= 3 <- ponerlo en una variable en el .env: * Se actualiza al usuario: is_blocked = true y blocked_until = ahora + 24 horas.
+        Se dispara un correo de alerta de seguridad al usuario. *** ENVIAR CORREO DE ALERTA DE SEGURIDAD ***
+
+    Se bloquea la petición actual.
+
+    Generación del Token:
+
+    Se crea un string aleatorio (el token real).
+
+    Se guarda en la tabla user_auth_tokens el hash de ese token, con un expires_at de 20 minutos.
+
+    Envío de Correo:
+
+Se envía la liga: https://tuapp.com/reset?token=VALOR_ALEATORIO. *** como vamos a validar  que el token no este expirado? ***
+
+2. Validación y Cambio (Consumo del Token)
+Cuando el usuario hace clic en la liga del correo:
+
+Búsqueda del Token: El sistema recibe el valor aleatorio, le saca el hash y lo busca en user_auth_tokens.
+
+Validación de Vigencia:
+
+¿Existe el hash?
+
+¿expires_at es mayor a la hora actual?
+
+¿used_at es null? (Un token solo debe servir una vez).
+
+Procesamiento:
+
+Si es válido, se actualiza el password_hash en la tabla users.
+
+Se marca el token como usado (used_at = ahora).
+
+Se invalidan todos los demás tokens de recuperación pendientes de ese usuario.
+
+3. Verificación de Email (Email Verification)
+Este flujo es casi idéntico al de recuperación, con dos diferencias:
+
+Trigger: Se dispara automáticamente cuando el usuario se registra exitosamente.
+
+Acción Final: En lugar de cambiar la contraseña, cambia la columna active de false a true (o una columna nueva llamada is_verified).
+
+
