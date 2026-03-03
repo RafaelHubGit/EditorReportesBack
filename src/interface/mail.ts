@@ -23,5 +23,6 @@ export interface VerificationParams {
 export interface RecoveryParams {
   toEmail: string;
   toName: string;
-  temporaryPassword?: string; // O el link de recuperación
+  link: string;
+  expiresInMinutes?: number;
 }

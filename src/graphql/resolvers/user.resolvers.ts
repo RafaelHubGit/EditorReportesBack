@@ -78,6 +78,10 @@ export const userResolvers = {
             return await UserService.requestPasswordRecovery(email);
         },
 
+        resetPasswordWithToken: async (_: any, { token, newPassword }: { token: string, newPassword: string }) => {
+            return await UserService.resetPasswordWithToken(token, newPassword);
+        },
+
         verifyEmail: async (_: any, { token }: { token: string }) => {
             return await UserService.verifyEmail(token);
         },

@@ -8,6 +8,7 @@ import { AuthTokenType, UserAuthToken } from '../entities/UserAuthToken.entity';
 import { IsNull, MoreThan } from 'typeorm';
 import { sendVerificationEmail } from './mail/templates/verification';
 import { user } from '@getbrevo/brevo/dist/cjs/api';
+import { sendPasswordRecoveryEmail } from './mail/templates/recovery';
 
 
 export class UserService {
@@ -303,10 +304,10 @@ export class UserService {
         // 1.1. Validación de Existencia
         const user = await this.userRepository.findOne({ where: { email } });
         
-        // Lado B: Si no existe, retornamos true para evitar enumeración de usuarios [cite: 10]
+        // Lado B: Si no existe, retornamos true para evitar enumeración de usuarios 
         if (!user) return true;
 
-        // 1.2. Verificación de Bloqueo Previo [cite: 11]
+        // 1.2. Verificación de Bloqueo Previo 
         if (user.is_blocked) {
             if (user.blocked_until && user.blocked_until > new Date()) {
                 throw new Error(`Cuenta bloqueada. Intenta después de: ${user.blocked_until.toLocaleString()}`);
@@ -317,7 +318,7 @@ export class UserService {
             }
         }
 
-        // 1.4. Conteo de Seguridad (Ventana de 24h) [cite: 15]
+        // 1.4. Conteo de Seguridad (Ventana de 24h) 
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const recoveryAttempts = await this.tokenRepository.count({
             where: {
@@ -330,33 +331,33 @@ export class UserService {
         const maxAttempts = parseInt(process.env.MAX_RECOVERY_ATTEMPTS_24H || '3');
 
         if (recoveryAttempts >= maxAttempts) {
-            // Bloqueo por 24 horas [cite: 16]
+            // Bloqueo por 24 horas 
             user.is_blocked = true;
             user.blocked_until = new Date(Date.now() + 24 * 60 * 60 * 1000);
             await this.userRepository.save(user);
 
-            // *** DISPARAR CORREO DE ALERTA DE SEGURIDAD AQUÍ *** [cite: 17, 18]
+            // *** DISPARAR CORREO DE ALERTA DE SEGURIDAD AQUÍ *** 
             console.log(`ALERTA: Correo de seguridad enviado a ${user.email}`);
             
             throw new Error('Demasiados intentos. Tu cuenta ha sido bloqueada por 24 horas por seguridad.');
         }
 
-        // 1.3. Control de Spam (Cooldown de 2 min) [cite: 13]
+        // 1.3. Control de Spam (Cooldown de 2 min) 
         const lastToken = await this.tokenRepository.findOne({
             where: { user_id: user.id, type: AuthTokenType.PASSWORD_RECOVERY },
             order: { created_at: 'DESC' }
         });
 
         if (lastToken && (Date.now() - lastToken.created_at.getTime()) < 120000) {
-            throw new Error('Debes esperar 2 minutos para solicitar un nuevo token.'); // [cite: 14]
+            throw new Error('Debes esperar 2 minutos para solicitar un nuevo token.'); // 
         }
 
-        // 1.9. Generación del Token [cite: 19]
+        // 1.9. Generación del Token 
         const rawToken = crypto.randomBytes(32).toString('hex');
-        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); // [cite: 20]
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); // 
 
         const expirationDate = new Date();
-        expirationDate.setMinutes(expirationDate.getMinutes() + 20); // Expiración de 20 min [cite: 20]
+        expirationDate.setMinutes(expirationDate.getMinutes() + 20); // Expiración de 20 min 
 
         const newToken = this.tokenRepository.create({
             token_hash: tokenHash,
@@ -367,9 +368,17 @@ export class UserService {
 
         await this.tokenRepository.save(newToken);
 
-        // 1.21. Envío de Correo [cite: 21]
-        // Link: https://tuapp.com/reset?token=${rawToken}
-        console.log(`DEBUG: Link enviado -> https://tuapp.com/reset?token=${rawToken}`);
+        // 1.21. Envío de Correo 
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const recoveryLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+        
+        console.log(`DEBUG: Link enviado -> ${recoveryLink}`);
+        await sendPasswordRecoveryEmail({
+            toEmail: user.email,
+            toName: user.name,
+            link: recoveryLink,
+            expiresInMinutes: 20
+        });
 
         return true;
     }
@@ -446,7 +455,7 @@ export class UserService {
 
         await this.tokenRepository.save(newToken);
         
-        // 2. Construir la liga usando variables de entorno [cite: 21]
+        // 2. Construir la liga usando variables de entorno 
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const verificationLink = `${frontendUrl}/verify-email?token=${rawToken}`;
 
@@ -485,7 +494,7 @@ export class UserService {
         user.active = true; // Aseguramos que la cuenta esté activa
         await this.userRepository.save(user);
 
-        // Marcar token como usado [cite: 25]
+        // Marcar token como usado 
         tokenRecord.used_at = new Date();
         await this.tokenRepository.save(tokenRecord);
 
