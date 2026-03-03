@@ -29,6 +29,7 @@ input RefreshTokenInput {
 extend type User {
     active: Boolean!
     is_verified: Boolean!
+    isAdmin: Boolean
     daysUntilDeletion: Int
 }
 
@@ -57,4 +58,6 @@ extend type Mutation {
     resetPasswordWithToken(token: String!, newPassword: String!): Boolean!
 
     verifyEmail(token: String!): Boolean!
+
+    resendVerificationEmail(email: String!): Boolean!
 }

@@ -86,5 +86,8 @@ export const userResolvers = {
             return await UserService.verifyEmail(token);
         },
 
+        resendVerificationEmail: async (_: any, { email }: { email: string }) => {
+            return await UserService.resendVerificationEmail(email);
+        },
     }
 };

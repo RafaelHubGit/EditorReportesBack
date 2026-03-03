@@ -534,5 +534,34 @@ export class UserService {
         return true;
     }
 
+    static async resendVerificationEmail(email: string): Promise<boolean> {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (!user) {
+            throw new AppError('USER_NOT_FOUND');
+        }
+
+        if (user.is_verified) {
+            throw new AppError('USER_ALREADY_VERIFIED');
+        }
+
+        // Opcional: Verificar cooldown (no permitir reenvío si se envió hace menos de 2 min)
+        const lastToken = await this.tokenRepository.findOne({
+            where: { 
+                user_id: user.id,
+                type: AuthTokenType.EMAIL_VERIFICATION
+            },
+            order: { created_at: 'DESC' }
+        });
+
+        if (lastToken && (Date.now() - lastToken.created_at.getTime()) < 120000) {
+            throw new AppError('TOO_MANY_ATTEMPTS');
+        }
+
+        // Generar nuevo token y enviar correo
+        await this.generateEmailVerificationToken(user.id);
+        
+        return true;
+    }
+
     
 }
