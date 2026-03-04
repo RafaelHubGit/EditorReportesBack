@@ -2,13 +2,20 @@
 import { Router } from 'express';
 import pdfRouter from './pdf';
 import { generateAdminUser } from './admin/controller';
+import { generateAltchaChallenge } from './altcha/controller';
 
-const router = Router();
+const mainRouter = Router();
 
-router.post('/generateAdminUser', generateAdminUser);
+const adminRouter = Router();
+adminRouter.post('/generateAdminUser', generateAdminUser);
+
+const altchaRouter = Router();
+altchaRouter.get('/generateAltchaChallenge', generateAltchaChallenge);
 
 
-export const routers = {
-  pdf: pdfRouter,
-  admin: router
-};
+mainRouter.use('/pdf', pdfRouter);
+mainRouter.use('/admin', adminRouter);
+mainRouter.use('/altcha', altchaRouter);
+
+
+export default mainRouter;

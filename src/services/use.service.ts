@@ -9,7 +9,7 @@ import { IsNull, MoreThan } from 'typeorm';
 import { sendVerificationEmail } from './mail/templates/verification';
 import { user } from '@getbrevo/brevo/dist/cjs/api';
 import { sendPasswordRecoveryEmail } from './mail/templates/recovery';
-import { AppError } from '../types/errors';
+import { AppError, ErrorCodes } from '../types/errors';
 
 
 export class UserService {
@@ -29,7 +29,7 @@ export class UserService {
         });
 
         if (existingUser) {
-            throw new AppError('USER_ALREADY_EXISTS');
+            throw new AppError(ErrorCodes.USER_ALREADY_EXISTS);
         }
 
         // Hash password
@@ -57,7 +57,7 @@ export class UserService {
         });
 
         if (!user) {
-            throw new AppError('INVALID_CREDENTIALS');
+            throw new AppError(ErrorCodes.INVALID_CREDENTIALS);
         }
 
         // Primero validamos si el usuario está bloqueado por los 3 intentos (24h)
@@ -65,7 +65,7 @@ export class UserService {
             // throw new Error(`Cuenta bloqueada temporalmente. Intenta después de: ${user.blocked_until.toLocaleString()}`);
             const error: any = new Error(`Cuenta bloqueada temporalmente. Intenta después de: ${user.blocked_until.toLocaleString()}`);
             error.extensions = {
-                code: 'USER_BLOCKED',
+                code: ErrorCodes.USER_BLOCKED,
                 blockedUntil: user.blocked_until.toISOString()
             };
             throw error;
@@ -73,7 +73,7 @@ export class UserService {
 
         const isValidPassword = await bcrypt.compare(password, user.password_hash);
         if (!isValidPassword) {
-            throw new AppError('INVALID_CREDENTIALS');
+            throw new AppError(ErrorCodes.INVALID_CREDENTIALS);
         }
 
         if (!user.is_verified) {
@@ -90,7 +90,7 @@ export class UserService {
             // o lanzar un error específico para que el Front sepa qué mostrar.
             if (diffDays <= 0) {
                 // throw new Error('Tu cuenta ha expirado por falta de verificación y será eliminada.');
-                throw new AppError('ACCOUNT_EXPIRED');
+                throw new AppError(ErrorCodes.ACCOUNT_EXPIRED);
             }
 
             // Devolvemos una respuesta especial o un flag para que el Front muestre el Alert
@@ -126,7 +126,7 @@ export class UserService {
         
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
         return user;
     }
@@ -151,7 +151,7 @@ export class UserService {
 
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         // Verificar si el email ya está en uso
@@ -162,7 +162,7 @@ export class UserService {
 
             if (existingUser) {
                 // throw new Error('Email already in use');
-                throw new AppError('EMAIL_ALREADY_IN_USE');
+                throw new AppError(ErrorCodes.EMAIL_ALREADY_IN_USE);
             }
         }
 
@@ -182,7 +182,7 @@ export class UserService {
 
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         await this.userRepository.remove(user);
@@ -196,13 +196,13 @@ export class UserService {
 
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         const isValidPassword = await bcrypt.compare(oldPassword, user.password_hash);
         if (!isValidPassword) {
             // throw new Error('Invalid current password');
-            throw new AppError('INVALID_CURRENT_PASSWORD');
+            throw new AppError(ErrorCodes.INVALID_CURRENT_PASSWORD);
         }
 
         user.password_hash = await bcrypt.hash(newPassword, 12);
@@ -217,7 +217,7 @@ export class UserService {
             return await this.getUserById(decoded.userId);
         } catch (err: any) {
             // throw new Error('Invalid token');
-            throw new AppError('INVALID_TOKEN');
+            throw new AppError(ErrorCodes.INVALID_TOKEN);
         }
     }
 
@@ -237,7 +237,7 @@ export class UserService {
             const isRefreshTokenValidCheck = await isRefreshTokenValid(refreshTokenVar, user);
             if (!isRefreshTokenValidCheck) {
                 // throw new Error('Invalid refresh token');
-                throw new AppError('INVALID_REFRESH_TOKEN');
+                throw new AppError(ErrorCodes.INVALID_REFRESH_TOKEN);
             }
 
             // Generar nuevos tokens
@@ -252,7 +252,7 @@ export class UserService {
             };
         } catch (err: any) {
             // throw new Error('Invalid refresh token');
-            throw new AppError('INVALID_REFRESH_TOKEN');
+            throw new AppError(ErrorCodes.INVALID_REFRESH_TOKEN);
         }
     }
 
@@ -261,7 +261,7 @@ export class UserService {
         
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         // Invertimos el estado actual
@@ -276,7 +276,7 @@ export class UserService {
 
         if (!user) {
             // throw new Error('User not found');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         // "contrasena123" con el salt de 12 definido en tu servicio
@@ -295,7 +295,7 @@ export class UserService {
 
         if (adminExists) {
             // throw new Error('Forbidden: System already has an administrator');
-            throw new AppError('FORBIDDEN');
+            throw new AppError(ErrorCodes.FORBIDDEN);
         }
 
         const randomHex = crypto.randomBytes(3).toString('hex');
@@ -334,7 +334,7 @@ export class UserService {
         if (user.is_blocked) {
             if (user.blocked_until && user.blocked_until > new Date()) {
                 // throw new Error(`Cuenta bloqueada. Intenta después de: ${user.blocked_until.toLocaleString()}`);
-                throw new AppError('ACCOUNT_LOCKED');
+                throw new AppError(ErrorCodes.USER_BLOCKED);
             } else {
                 // Si el tiempo de bloqueo ya pasó, lo desbloqueamos para este nuevo intento 
                 user.is_blocked = false;
@@ -364,7 +364,7 @@ export class UserService {
             console.log(`ALERTA: Correo de seguridad enviado a ${user.email}`);
             
             // throw new Error('Demasiados intentos. Tu cuenta ha sido bloqueada por 24 horas por seguridad.');
-            throw new AppError('TOO_MANY_ATTEMPTS');
+            throw new AppError(ErrorCodes.TOO_MANY_ATTEMPTS);
         }
 
         // 1.3. Control de Spam (Cooldown de 2 min) 
@@ -375,7 +375,7 @@ export class UserService {
 
         if (lastToken && (Date.now() - lastToken.created_at.getTime()) < 120000) {
             // throw new Error('Debes esperar 2 minutos para solicitar un nuevo token.'); // 
-            throw new AppError('TOO_MANY_ATTEMPTS');
+            throw new AppError(ErrorCodes.TOO_MANY_ATTEMPTS);
         }
 
         // 1.9. Generación del Token 
@@ -424,24 +424,24 @@ export class UserService {
         // 2.3. Validación de Vigencia
         if (!tokenRecord) {
             // throw new Error('Token inválido o inexistente.'); 
-            throw new AppError('INVALID_TOKEN');
+            throw new AppError(ErrorCodes.INVALID_TOKEN);
         }
 
         if (tokenRecord.used_at) {
             // throw new Error('Este token ya ha sido utilizado.'); 
-            throw new AppError('TOKEN_ALREADY_USED');
+            throw new AppError(ErrorCodes.TOKEN_ALREADY_USED);
         }
 
         if (tokenRecord.expires_at < new Date()) {
             // throw new Error('El token ha expirado (límite de 20 minutos).'); 
-            throw new AppError('TOKEN_EXPIRED');
+            throw new AppError(ErrorCodes.TOKEN_EXPIRED);
         }
 
         // 2.5. Procesamiento
         const user = await this.userRepository.findOne({ where: { id: tokenRecord.user_id } });
         if (!user) {
             // throw new Error('Usuario no encontrado.');
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         // Hasheamos la nueva contraseña (usando el salt de 12 de tu servicio)
@@ -517,7 +517,7 @@ export class UserService {
 
         if (!tokenRecord || tokenRecord.expires_at < new Date()) {
             // throw new Error('Token inválido o expirado.');
-            throw new AppError('INVALID_TOKEN');
+            throw new AppError(ErrorCodes.INVALID_TOKEN);
         }
 
         const user = tokenRecord.user;
@@ -537,11 +537,11 @@ export class UserService {
     static async resendVerificationEmail(email: string): Promise<boolean> {
         const user = await this.userRepository.findOne({ where: { email } });
         if (!user) {
-            throw new AppError('USER_NOT_FOUND');
+            throw new AppError(ErrorCodes.USER_NOT_FOUND);
         }
 
         if (user.is_verified) {
-            throw new AppError('USER_ALREADY_VERIFIED');
+            throw new AppError(ErrorCodes.USER_ALREADY_VERIFIED);
         }
 
         // Opcional: Verificar cooldown (no permitir reenvío si se envió hace menos de 2 min)
@@ -554,7 +554,7 @@ export class UserService {
         });
 
         if (lastToken && (Date.now() - lastToken.created_at.getTime()) < 120000) {
-            throw new AppError('TOO_MANY_ATTEMPTS');
+            throw new AppError(ErrorCodes.TOO_MANY_ATTEMPTS);
         }
 
         // Generar nuevo token y enviar correo

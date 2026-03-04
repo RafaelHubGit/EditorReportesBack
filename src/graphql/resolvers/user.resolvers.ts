@@ -1,3 +1,4 @@
+import { requireAltcha } from "../../guards/altcha.guard";
 import { requireAuth } from "../../guards/auth.guard";
 import { UserService } from "../../services/use.service";
 
@@ -37,14 +38,14 @@ export const userResolvers = {
     },
 
     Mutation: {
-        register: async (_: any, { input }: { input: any }) => {
+        register: requireAltcha(async (_: any, { input }: { input: any }) => {
             return await UserService.createUser(input);
-        },
+        }),
 
-        login: async (_: any, { input }: { input: any }) => {
+        login: requireAltcha(async (_: any, { input }: { input: any }) => {
             const { email, password } = input;
             return await UserService.authenticateUser(email, password);
-        },
+        }),
 
         refreshToken: async (_: any, { input }: { input: any }) => {
             const refreshToken = input.refreshToken;
@@ -59,12 +60,12 @@ export const userResolvers = {
             return await UserService.deleteUser(context.user.id);
         }),
 
-        changePassword: requireAuth(async (_: any, { oldPassword, newPassword }: { 
+        changePassword: requireAltcha(requireAuth(async (_: any, { oldPassword, newPassword }: { 
             oldPassword: string; 
             newPassword: string 
         }, context: any) => {
             return await UserService.changePassword(context.user.id, oldPassword, newPassword);
-        }),
+        })),
 
         toggleUserStatus: requireAuth(async (_: any, { id, active }: { id: string, active: boolean }) => {
             return await UserService.toggleUserStatus(id, active);
@@ -74,17 +75,17 @@ export const userResolvers = {
             return await UserService.resetUserPassword(id);
         }),
 
-        requestPasswordRecovery: async (_: any, { email }: { email: string }) => {
+        requestPasswordRecovery: requireAltcha(async (_: any, { email }: { email: string }) => {
             return await UserService.requestPasswordRecovery(email);
-        },
+        }),
 
         resetPasswordWithToken: async (_: any, { token, newPassword }: { token: string, newPassword: string }) => {
             return await UserService.resetPasswordWithToken(token, newPassword);
         },
 
-        verifyEmail: async (_: any, { token }: { token: string }) => {
+        verifyEmail: requireAltcha(async (_: any, { token }: { token: string }) => {
             return await UserService.verifyEmail(token);
-        },
+        }),
 
         resendVerificationEmail: async (_: any, { email }: { email: string }) => {
             return await UserService.resendVerificationEmail(email);
