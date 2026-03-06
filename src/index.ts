@@ -10,6 +10,9 @@ import { json } from 'body-parser';
 import { AppDataSource } from './config/typeorm.config';
 import routers from './routes';
 
+// Importar el worker de PDF 
+import './workers/pdf.worker'; // Inicia el worker de PDF
+
 // Importaciones que crearemos después
 // import { connectMongoDB } from './database/mongo/connection';
 // import { connectPostgreSQL } from './database/postgres/connection';

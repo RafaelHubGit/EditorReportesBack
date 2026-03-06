@@ -1,13 +1,14 @@
 // src/routes/pdf/index.ts
 import { Router } from 'express';
 // import { validateApiKey } from './middleware';
-import { generatePDF } from './controller';
+import { generateLinkPdf, generatePDF } from './controller';
 
 const router = Router();
 
 // POST /api/pdf/generate
 // router.post('/generate', validateApiKey, generatePDF);
 router.post('/generatePdf', generatePDF);
+router.post('/generateLinkPdf', generateLinkPdf);
 
 // GET /api/pdf/templates (opcional, para listar templates disponibles)
 // router.get('/templates', validateApiKey, (req, res) => {
