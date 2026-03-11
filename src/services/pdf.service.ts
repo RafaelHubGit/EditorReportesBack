@@ -8,13 +8,18 @@ import { generateHtml } from "../utils/generateHtml";
 import { SecurityService } from "../utils/security";
 import { ApiKeyService } from "./apiKey.service";
 import { RateLimitService } from "./rateLimit.service";
+import { SSEService } from "./sse.service";
 import { TemplateService } from "./template.service";
 
 
-
+type ProgressCallback = (etapa: string, porcentaje: number, mensaje: string) => Promise<void>;
 
 // export const generatePDFService = async ( apikey: string, documentId: string ): 
-export const generatePDFService = async ( payload: IGeneratePDFService, jsonDataVar?: Record<string, any> ): Promise<{ 
+export const generatePDFService = async ( 
+    payload: IGeneratePDFService, 
+    onProgress: ProgressCallback,
+    jsonDataVar?: Record<string, any>,
+): Promise<{ 
     success: boolean, 
     pdfBase64: string, 
     slug: string, // New: Return the slug
@@ -23,11 +28,15 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
 
     const { apiKey, documentId } = payload;
 
+    await onProgress('validando API key', 10, 'Verificando credenciales...');
+
     // Validar API Key
     const apiKeyValidated = await ApiKeyService.validateApiKey(apiKey);
     if (!apiKeyValidated) {
         throw new Error('Invalid API key');
     }
+
+    await onProgress('API validada', 20, 'Apy Key verificada correctamente');
 
     // Usamos el ID de la API Key o la llave misma como identificador único
     const LIMIT_PER_HOUR = Number(process.env.PDF_LIMIT_PER_HOUR) || 500;
@@ -48,12 +57,18 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
         throw error;
     }
 
+    await onProgress('rate limit ok', 30, 'Límite de uso verificado');
+
+
     // Validar Documento
     const document = await TemplateService.getTemplateById(documentId);
 
     if (!document) {
         throw new Error('Document not found');
     }
+
+    await onProgress('documento cargado', 40, 'Documento encontrado');
+    
 
     const cleanBodyHtml = SecurityService.sanitizeContent(document.html);
     // Sanitizamos Header y Footer si vienen en las opciones
@@ -88,6 +103,7 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
         document.css += watermarkCss;
     }
 
+    await onProgress('generando HTML', 50, 'Procesando plantilla...');
 
     
     const renderedHtml = generateHtml({ 
@@ -113,9 +129,13 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
         }
     }
 
+    await onProgress('generando PDF', 70, 'Llamando al servicio de PDF...');
+
 
 
     const pdfBuffer = await callPdfApi(renderedHtml, vpageConfig);
+
+    await onProgress('guardando archivo', 85, 'Almacenando PDF...');
 
     // 1. Prepare Metadata
     const slug = generateSecureSlug(12);

@@ -34,7 +34,10 @@ if (isProd) {
   // Helment configurado para desarrollo (permite GraphiQL)
   app.use(helmet({
     contentSecurityPolicy: false, // ✅ Desactiva CSP en desarrollo
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false, 
+    crossOriginOpenerPolicy: false,   
+    xFrameOptions: false              
   }));
 }
 

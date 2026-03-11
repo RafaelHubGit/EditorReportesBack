@@ -21,30 +21,13 @@ const worker = new Worker('pdf-tasks', async (job) => {
       mensaje: 'Comenzando generación del PDF...'
     });
     
-    // Simular progreso (opcional, puedes quitarlo si no lo necesitas)
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await SSEService.publish(jobId, 'progreso', { 
-      etapa: 'generando HTML', 
-      porcentaje: 30,
-      mensaje: 'Procesando plantilla...'
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await SSEService.publish(jobId, 'progreso', { 
-      etapa: 'generando PDF', 
-      porcentaje: 60,
-      mensaje: 'Generando documento PDF...'
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    await SSEService.publish(jobId, 'progreso', { 
-      etapa: 'guardando archivo', 
-      porcentaje: 80,
-      mensaje: 'Guardando archivo...'
-    });
 
-    // Generar PDF (tu servicio real)
-    const result = await generatePDFService({ apiKey, documentId });
+    const result = await generatePDFService(
+      { apiKey, documentId },
+      async (etapa, porcentaje, mensaje) => {
+        await SSEService.publish(jobId, 'progreso', { etapa, porcentaje, mensaje });
+      }
+    );
     
     console.log(`✅ PDF generado exitosamente para job ${jobId}, slug: ${result.slug}`);
     
@@ -52,7 +35,7 @@ const worker = new Worker('pdf-tasks', async (job) => {
     await SSEService.publish(jobId, 'completado', {
       success: true,
       slug: result.slug,
-      pdfBase64: result.pdfBase64, // Opcional: enviar el PDF directamente
+      url: `http://localhost:4000/api/pdf/v/${result.slug}`,
       message: 'PDF generado correctamente'
     });
     

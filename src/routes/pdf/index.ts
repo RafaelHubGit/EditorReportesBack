@@ -1,14 +1,12 @@
 // src/routes/pdf/index.ts
 import { Router } from 'express';
 // import { validateApiKey } from './middleware';
-import { generateLinkPdf, generatePDF } from './controller';
+import { servePdfFile, generatePdfLink } from './controller';
 
 const router = Router();
 
-// POST /api/pdf/generate
-// router.post('/generate', validateApiKey, generatePDF);
-router.post('/generatePdf', generatePDF);
-router.post('/generateLinkPdf', generateLinkPdf);
+router.post('/generatePdf', generatePdfLink ); //encola y responde con jobId (flujo SSE)
+router.get('/v/:slug', servePdfFile); //sirve el PDF
 
 // GET /api/pdf/templates (opcional, para listar templates disponibles)
 // router.get('/templates', validateApiKey, (req, res) => {
