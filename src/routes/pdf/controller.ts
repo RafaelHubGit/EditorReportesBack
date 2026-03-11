@@ -1,10 +1,78 @@
 // src/routes/pdf/controller.ts
 import { Request, Response } from 'express';
-import { GeneratePDFRequest, GeneratePDFResponse } from './types';
+import { GeneratePDFResponse } from './types';
+import fs from 'fs';
 
-import { TemplateService } from '../../services/template.service';
 import { generatePDFService } from '../../services/pdf.service';
 import { addPdfToQueue } from '../../queues/pdf.queue';
+import { AppDataSource } from '../../config/typeorm.config';
+import { FileStatus, GeneratedFile } from '../../entities/GeneratedFIles.entity';
+import { StorageManager } from '../../manager/storage.manager';
+
+
+
+export const downloadFileController = async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    const fileRepository = AppDataSource.getRepository(GeneratedFile);
+
+    if (!slug) {
+        return res.status(400).json({ message: "Slug is required" });
+    }
+
+    try {
+        // 1. Find the record
+        const fileRecord = await fileRepository.findOne({ where: { slug } });
+
+        if (!fileRecord) {
+            return res.status(404).json({ message: "File not found" });
+        }
+
+        // 2. Check Expiration
+        const now = new Date();
+        if (now > fileRecord.expires_at || fileRecord.status === FileStatus.EXPIRED) {
+            
+            // Logic: Link expired, so we cleanup
+            const storageProvider = StorageManager.getProvider();
+            await storageProvider.delete(fileRecord.slug + '.pdf', 'pdf');
+            
+            // Update DB status
+            fileRecord.status = FileStatus.EXPIRED;
+            await fileRepository.save(fileRecord);
+
+            return res.status(410).json({ message: "The file has already expired" });
+        }
+
+        // 3. Serve the file
+        const storageProvider = StorageManager.getProvider();
+        const filePath = await storageProvider.getSignedUrl(fileRecord.slug + '.pdf', 'pdf');
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileRecord.original_name}"`);
+
+        // If local, we stream directly. If GCS, we redirect or stream from the URL.
+        if (process.env.PROJECT_MODE === 'local') {
+            const fileStream = fs.createReadStream(filePath);
+            fileStream.pipe(res);
+        } else {
+            // For SaaS/GCS, you can redirect to the signed URL
+            res.redirect(filePath);
+        }
+
+        // 4. Handle "Delete Immediately" logic
+        if (fileRecord.delete_immediately) {
+            // We should wait for the stream to finish before deleting
+            res.on('finish', async () => {
+                await storageProvider.delete(fileRecord.slug + '.pdf', 'pdf');
+                fileRecord.status = FileStatus.EXPIRED;
+                await fileRepository.save(fileRecord);
+            });
+        }
+
+    } catch (error) {
+        console.error("Download Error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
 
 export const generatePDF = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -18,8 +86,14 @@ export const generatePDF = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+        console.log(`📥 Recibida solicitud para documento: ${documentId}`);
+
+
     // Encolar el trabajo
     const job = await addPdfToQueue({ apiKey, documentId });
+
+        console.log(`✅ Trabajo encolado con ID: ${job.id}`);
+
 
     // Devolver jobId para que el cliente pueda conectarse al SSE
     res.status(202).json({
@@ -174,3 +248,4 @@ export const generateLinkPdf = async (req: Request, res: Response): Promise<void
 
 
 }
+

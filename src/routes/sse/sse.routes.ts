@@ -1,58 +1,63 @@
 import { Router, Request, Response } from 'express';
-import { activeJobs } from '../../workers/pdf.worker';
+import { SSEService } from '../../services/sse.service';
+
 
 const router = Router();
-
-// Mapa para llevar control de las conexiones activas
-const sseConnections = new Map<string, Response>();
 
 router.get('/pdf-status/:jobId', (req: Request, res: Response) => {
   const { jobId } = req.params;
   
-  // Validar que jobId existe
   if (!jobId) {
-    res.status(400).json({ error: 'jobId is required' });
+    res.status(400).json({ error: 'jobId es requerido' });
     return;
   }
   
-  console.log(`📡 Cliente conectado para job ${jobId}`);
+  console.log(`📡 Nueva conexión SSE para job ${jobId}`);
   
   // Configurar headers SSE
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*' // Ajusta según tu necesidad
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control',
+    'X-Accel-Buffering': 'no' // Deshabilitar buffering para nginx
   });
   
-  // Enviar heartbeat cada 15 segundos para mantener viva la conexión
+  // Enviar mensaje de conexión establecida
+  res.write(`event: connected\n`);
+  res.write(`data: ${JSON.stringify({ message: 'Conectado al servidor SSE', jobId })}\n\n`);
+  
+  // Heartbeat para mantener conexión viva
   const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
+    res.write(':\n\n'); // Comentario SSE (mantiene conexión)
   }, 15000);
   
-  // Guardar la conexión para que el worker pueda usarla
-  sseConnections.set(jobId, res);
+  // Suscribirse a eventos Redis para este job
+  const subscriber = SSEService.createSubscriber(jobId, res);
   
-  // Registrar función de notificación en activeJobs
-  activeJobs.set(jobId, (event: string, data: any) => {
-    res.write(`event: ${event}\n`);
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-    
-    // Si el evento es 'completado' o 'error', podemos cerrar la conexión
-    if (event === 'completado' || event === 'error') {
-      setTimeout(() => {
-        res.end();
-        sseConnections.delete(jobId);
-      }, 1000);
-    }
-  });
+  // Timeout de seguridad (5 minutos)
+  const timeout = setTimeout(() => {
+    console.log(`⏰ Timeout de seguridad para job ${jobId}`);
+    res.write(`event: timeout\n`);
+    res.write(`data: ${JSON.stringify({ message: 'Tiempo de espera agotado' })}\n\n`);
+    res.end();
+  }, 300000); // 5 minutos
   
   // Manejar desconexión del cliente
   req.on('close', () => {
     console.log(`🔌 Cliente desconectado de job ${jobId}`);
     clearInterval(heartbeat);
-    sseConnections.delete(jobId);
-    activeJobs.delete(jobId);
+    clearTimeout(timeout);
+    
+    // Limpiar suscripción Redis
+    try {
+      subscriber.quit();
+    } catch (error) {
+      console.error(`Error cerrando subscriber para job ${jobId}:`, error);
+    }
+    
+    res.end();
   });
 });
 

@@ -1,5 +1,9 @@
 
+import { AppDataSource } from "../config/typeorm.config";
 import { GeneratePDFDto, PdfOptionsDto, PdfOptionsDtoSchema } from "../dto/pdf-generation.dto";
+import { FileStatus, GeneratedFile } from "../entities/GeneratedFIles.entity";
+import { StorageManager } from "../manager/storage.manager";
+import { generateSecureSlug } from "../utils/file.util";
 import { generateHtml } from "../utils/generateHtml";
 import { SecurityService } from "../utils/security";
 import { ApiKeyService } from "./apiKey.service";
@@ -11,9 +15,10 @@ import { TemplateService } from "./template.service";
 
 // export const generatePDFService = async ( apikey: string, documentId: string ): 
 export const generatePDFService = async ( payload: IGeneratePDFService, jsonDataVar?: Record<string, any> ): Promise<{ 
-        success: boolean, 
-        pdfBase64: string, 
-        message: string 
+    success: boolean, 
+    pdfBase64: string, 
+    slug: string, // New: Return the slug
+    message: string
 }> => {
 
     const { apiKey, documentId } = payload;
@@ -45,7 +50,7 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
 
     // Validar Documento
     const document = await TemplateService.getTemplateById(documentId);
-    console.log('🔵 Documento encontrado:', document);
+
     if (!document) {
         throw new Error('Document not found');
     }
@@ -110,18 +115,38 @@ export const generatePDFService = async ( payload: IGeneratePDFService, jsonData
 
 
 
-    const pdfBase64 = await callPdfApi(renderedHtml, vpageConfig);
+    const pdfBuffer = await callPdfApi(renderedHtml, vpageConfig);
 
-    
+    // 1. Prepare Metadata
+    const slug = generateSecureSlug(12);
+    const fileName = `${slug}.pdf`;
+    const storageProvider = StorageManager.getProvider();
+
+    // 2. Save Physical File
+    const storagePath = await storageProvider.save(pdfBuffer, fileName, 'pdf');
+
+    // 3. Save to Database
+    const fileRepository = AppDataSource.getRepository(GeneratedFile);
+    const newFile = fileRepository.create({
+        slug,
+        original_name: document.name || 'document.pdf', // Using name from your document object
+        storage_path: storagePath,
+        status: FileStatus.COMPLETED,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24h
+        delete_immediately: false // Or true if you want it one-time use
+    });
+
+    await fileRepository.save(newFile);
 
     return {
         success: true,
-        pdfBase64,
-        message: 'PDF generated successfully'
+        pdfBase64: pdfBuffer.toString('base64'),
+        slug, // Give this back so the controller knows the URL
+        message: 'PDF generated and stored successfully'
     };
 }
 
-const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<string> => {
+const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<Buffer> => {
 
     // 1. Crear un controlador para abortar la petición
     const controller = new AbortController();
@@ -133,7 +158,8 @@ const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<stri
 
         let fetchResponse: Response;
 
-        fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
+        // fetchResponse = await fetch('http://localhost:3001/api/pdf/base64', {
+        fetchResponse = await fetch('http://localhost:3001/api/pdf/file', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -150,9 +176,11 @@ const callPdfApi = async ( html: string, options?: PdfOptionsDto ): Promise<stri
             throw new Error(`Failed to generate PDF: ${fetchResponse.status} - ${JSON.stringify(fetchResponse)}`);
         }
 
-        const response = await fetchResponse.json() as { pdfBase64: string };
 
-        return response.pdfBase64;
+        const arrayBuffer = await fetchResponse.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+        // const response = await fetchResponse.json() as { pdfBase64: string };
+        // return response.pdfBase64;
 
 
     } catch (error: any) {

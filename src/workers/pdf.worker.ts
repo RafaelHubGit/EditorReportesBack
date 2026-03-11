@@ -1,40 +1,60 @@
 import { Worker, Job } from 'bullmq';
 import { connection } from '../queues/pdf.queue';
 import { generatePDFService } from '../services/pdf.service';
-
-type NotifyCallback = (event: string, data: any) => void;
-
-// Necesitamos una forma de notificar el progreso
-// Por ahora usaremos un mapa en memoria (luego mejoraremos esto)
-export const activeJobs = new Map<string, NotifyCallback>();
+import { SSEService } from '../services/sse.service';
 
 const worker = new Worker('pdf-tasks', async (job) => {
   const { apiKey, documentId } = job.data;
-  const jobId = job.id; // job.id es string | undefined
+  const jobId = job.id;
   
-  // Si no hay jobId, algo está mal
   if (!jobId) {
     throw new Error('Job ID is undefined');
   }
   
-  console.log(`🔄 Procesando job ${jobId}`);
+  console.log(`🔄 Procesando job ${jobId} para documento ${documentId}`);
   
   try {
     // Notificar inicio
-    const notificar = activeJobs.get(jobId);
-    if (notificar) notificar('progreso', { etapa: 'iniciado', porcentaje: 10 });
+    await SSEService.publish(jobId, 'progreso', { 
+      etapa: 'iniciado', 
+      porcentaje: 10,
+      mensaje: 'Comenzando generación del PDF...'
+    });
+    
+    // Simular progreso (opcional, puedes quitarlo si no lo necesitas)
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await SSEService.publish(jobId, 'progreso', { 
+      etapa: 'generando HTML', 
+      porcentaje: 30,
+      mensaje: 'Procesando plantilla...'
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await SSEService.publish(jobId, 'progreso', { 
+      etapa: 'generando PDF', 
+      porcentaje: 60,
+      mensaje: 'Generando documento PDF...'
+    });
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await SSEService.publish(jobId, 'progreso', { 
+      etapa: 'guardando archivo', 
+      porcentaje: 80,
+      mensaje: 'Guardando archivo...'
+    });
 
-    // Llamar a tu servicio existente
+    // Generar PDF (tu servicio real)
     const result = await generatePDFService({ apiKey, documentId });
     
+    console.log(`✅ PDF generado exitosamente para job ${jobId}, slug: ${result.slug}`);
+    
     // Notificar completado
-    if (notificar) {
-      notificar('completado', {
-        success: true,
-        pdfBase64: result.pdfBase64,
-        message: result.message
-      });
-    }
+    await SSEService.publish(jobId, 'completado', {
+      success: true,
+      slug: result.slug,
+      pdfBase64: result.pdfBase64, // Opcional: enviar el PDF directamente
+      message: 'PDF generado correctamente'
+    });
     
     return result;
     
@@ -42,34 +62,29 @@ const worker = new Worker('pdf-tasks', async (job) => {
     console.error(`❌ Error en job ${jobId}:`, error);
     
     // Notificar error
-    const notificar = activeJobs.get(jobId);
-    if (notificar) {
-      notificar('error', {
-        message: error.message,
-        status: error.status || 500
-      });
-    }
+    await SSEService.publish(jobId, 'error', {
+      success: false,
+      message: error.message || 'Error generando PDF',
+      status: error.status || 500
+    });
     
     throw error;
-  } finally {
-    // Limpiar siempre
-    activeJobs.delete(jobId);
   }
 }, { 
   connection,
   lockDuration: Number(process.env.QUEUE_DURATION) || 60000,
-  concurrency: Number(process.env.QUEUE_CONCURRENCY) || 5, // Procesar 5 PDFs simultáneamente
-  lockRenewTime: Number(process.env.QUEUE_LOCK_RENEW_TIME) || 15000, // It will renew the lock every 15 seconds automatically
+  concurrency: Number(process.env.QUEUE_CONCURRENCY) || 5,
+  lockRenewTime: Number(process.env.QUEUE_LOCK_RENEW_TIME) || 15000,
 });
 
 worker.on('completed', (job: Job) => {
-  console.log(`✅ Job ${job.id} completado`);
+  console.log(`✅ Worker: Job ${job.id} completado`);
 });
 
 worker.on('failed', (job: Job | undefined, error: Error) => {
-  console.log(`❌ Job ${job?.id} falló:`, error.message);
+  console.log(`❌ Worker: Job ${job?.id} falló:`, error.message);
 });
 
-console.log('🚀 Worker de PDF iniciado');
+console.log('🚀 Worker de PDF iniciado con Redis Pub/Sub');
 
 export default worker;
