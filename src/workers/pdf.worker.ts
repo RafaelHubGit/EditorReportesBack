@@ -1,17 +1,19 @@
 import { Worker, Job } from 'bullmq';
+import crypto from 'node:crypto';
 import { connection } from '../queues/pdf.queue';
-import { generatePDFService } from '../services/pdf.service';
+import { generatePDFDirectService, generatePDFService } from '../services/pdf.service';
 import { SSEService } from '../services/sse.service';
+import { PDFJobData } from '../types/pdfJob';
 
-const worker = new Worker('pdf-tasks', async (job) => {
-  const { apiKey, documentId } = job.data;
+const worker = new Worker('pdf-tasks', async (job: Job<PDFJobData>) => {
+  const { apiKey, documentId, deleteImmediately = false, webhookUrl } = job.data;
   const jobId = job.id;
   
   if (!jobId) {
     throw new Error('Job ID is undefined');
   }
   
-  console.log(`🔄 Procesando job ${jobId} para documento ${documentId}`);
+  console.log(`🔄 Procesando job ${jobId} para documento ${documentId} (deleteImmediately: ${deleteImmediately})`);
   
   try {
     // Notificar inicio
@@ -21,17 +23,49 @@ const worker = new Worker('pdf-tasks', async (job) => {
       mensaje: 'Comenzando generación del PDF...'
     });
     
+    // Función de progreso común para ambos servicios
+    const reportProgress = async (etapa: string, porcentaje: number, mensaje: string) => {
+      await SSEService.publish(jobId, 'progreso', { etapa, porcentaje, mensaje });
+    };
 
-    const result = await generatePDFService(
+    let result;
+
+    result = await generatePDFService(
       { apiKey, documentId },
-      async (etapa, porcentaje, mensaje) => {
-        await SSEService.publish(jobId, 'progreso', { etapa, porcentaje, mensaje });
-      }
+      reportProgress,
+      undefined,
+      deleteImmediately
     );
+
+    if (webhookUrl) {
+      const payload = {
+        event: 'pdf.completed',
+        jobId,
+        slug: result.slug,
+        url: `http://localhost:4000/api/pdf/v/${result.slug}`,
+        timestamp: new Date().toISOString()
+      };
+
+      // SIGN THE PAYLOAD (Security)
+      const secret = process.env.WEBHOOK_SECRET || 'fallback_secret';
+      const signature = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-SaaS-Signature': signature // Client validates this
+        },
+        body: JSON.stringify(payload),
+      });
+    }
     
     console.log(`✅ PDF generado exitosamente para job ${jobId}, slug: ${result.slug}`);
     
-    // Notificar completado
+    // Notificar completado con slug/url
     await SSEService.publish(jobId, 'completado', {
       success: true,
       slug: result.slug,

@@ -1,11 +1,9 @@
 // src/queues/pdf.queue.ts
 import { Queue, Job } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
+import { PDFJobData } from '../types/pdfJob';
 
-export type PDFJobData = {
-  apiKey: string;
-  documentId: string;
-};
+
 
 // Exportamos la conexión para reusarla
 export const connection = { host: 'localhost', port: 6379 };
