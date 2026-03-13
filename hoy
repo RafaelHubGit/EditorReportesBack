@@ -1,0 +1,59 @@
+
+
+1. Generar tabla de pagos y suscripciones
+
+2. gestionar que los de business se vayan primero a la generacion de pdf en el queue y los free al final
+
+2. Validacion de usuarios y suscripciones
+2.2. se debe definir 
+    2.2.1. documentos totales por mes
+    2.2.2. costo extra por documento
+    2.2.3. templates totales
+    2.2.4. maxima duracion (tiempo de generacion de pdf)
+    2.2.5. retencion de documentos (tiempo de vida de documentos)
+    2.2.6. uso de Webhooks
+    2.2.7. archivos locales
+    2.2.8. archivos locales tamaño
+    2.2.9. uso de Storage boolean
+    2.2.10. tiempo de suscripcion
+    2.2.11. costo de suscripcion
+
+3. a partir de la tabla de pagos y suscripciones
+3.1. is restando los documentos totales por mes
+3.2. restringir la duracion de la generacion de pdf
+3.3. restringir los webhooks
+
+4. uso y subida de documentos (o se queda para la version 2)
+4.1. uendpoint para subida de documentos
+4.2. front de subida de documentos
+
+5. dashboard
+5.1. mostrar pagos
+5.2. mostrar suscripciones
+5.3. mostrar documentos
+
+6. webhooks (verificar reintentos   )
+
+7. implementacion de los cronjobs
+7.1. cronjob para eliminar documentos (según retencion) y de tabla
+7.2. cronjob eliminar usuarios no verificados e informacion
+7.3. cronjob eliminar tokens expirados
+7.4. cronjob para eliminar informacion de usuarios que no tengan suscripcion activa 
+    7.4.1. se debe enviar correo para avisar que se eliminara la informacion si no se paga la suscripcion
+    7.4.2. cuanto tiempo se va a retener la informacion de un usuario que no tenga suscripcion activa???
+
+8. manejo de extra documentos 
+8.1. que pasa si el usuario excede los documentos?? se va a cortar? o se siguen generando y se le cobra extra??, de ser asi, cuantos documentos extra se le van a permitir generar??
+
+9. tabla tracker para "rastrear" el uso y creacion de los documentos|
+
+
+9. generacion de multiples api keys (solo par abusiness) 2da verison
+
+
+
+10. ************ limitar en docker
+10.1. 1GB mongo 
+10.2. 512MB redis
+10.4. 1gb postgres
+10.5. el resto libre para el servicio de pdf

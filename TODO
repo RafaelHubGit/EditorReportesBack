@@ -1,28 +1,11 @@
 1. Infraestructura y Docker (Prioridad Alta)
 [ ] Configuración de docker-compose.yml: * Definir variable de entorno SHM_SIZE (ej. .env -> SHM_SIZE=2gb).
 
-Asignar shm_size: ${SHM_SIZE} en el servicio de Puppeteer/Browserless.
-
-[ ] Diferencial de Storage (Local vs Cloud):
-
-Crear una interfaz de Provider (IStorageProvider) para abstraer FileSystemStorage y GoogleCloudStorage.
-
-Permitir que el usuario "Local" inyecte sus propias credenciales de GCP en el .env.
+Asignar shm_size: ${SHM_SIZE} en el servicio de Puppeteer/Browserless
 
 Lado B (Riesgo): shm_size: 2gb es generoso, pero si no limitas la memoria total del contenedor (mem_limit), un memory leak en Puppeteer puede congelar todo tu host, no solo el contenedor. Debes poner un hard limit de RAM además del SHM.
 
-2. Base de Datos de Documentos y Persistencia
-[ ] Creación de Tabla GeneratedDocuments:
-
-Campos: id (UUID), random_id (Slug para URL), original_name, storage_path, url_link, created_at, expires_at, delete_immediately (Boolean), status (pending, completed, failed).
-
-[ ] Lógica de Guardado:
-
-Refactorizar el servicio para llamar a la API de PDF y recibir un Stream/File, no base64. (Base64 consume 33% más de memoria; para PDFs grandes, esto matará tu microservicio).
-
-Implementar renombrado: idAleatoria_nombreDocumento.pdf.
-
-3. Sistema de Cleanup (Cron Jobs)
+2. Sistema de Cleanup (Cron Jobs)
 [ ] Instalar node-cron.
 
 [ ] Job 1: Limpieza de Usuarios: Eliminar cuentas con is_verified: false tras 7 días.
@@ -33,10 +16,7 @@ Implementar renombrado: idAleatoria_nombreDocumento.pdf.
 
 Borrar archivos con delete_immediately: true después de ser servidos vía res.download.
 
-4. Lógica de Servicio y Descarga
-[ ] Endpoint de Descarga Directa: Crear ruta que sirva el archivo desde el buffer/stream sin pasar por el storage (ahorro de latencia).
-
-[ ] Endpoint de URL Temporal: Servir archivo mediante random_id y ejecutar la lógica de "borrado tras lectura".
+4. Lógica de Servicio y Descarg
 
 [ ] Límites de Procesamiento (Timeouts):
 
@@ -104,58 +84,13 @@ app.get('/pdf/:token', async (req, res) => {
 ***Shared Memory (/dev/shm): Chromium usa la memoria compartida para renderizar. Por defecto, Docker asigna solo 64MB, lo cual hará que Puppeteer truene con archivos grandes.
 Solución: En tu docker-compose, debes agregar shm_size: '2gb' para que Chrome tenga espacio para "dibujar" el PDF.
 
-1. Al llamar el servicio de pdf -> const pdfBase64 = await callPdfApi(renderedHtml, vpageConfig);
-1.1. se debe llamar el de file no el de base64
-1.2. se debe guardar el documento cambiando el nombre idAleatoria_nombreDocumento.pdf
-1.3. Se debe guardar este en la bd con lo sig 
-    id, nombre, ubicacion, fecha/hora expira, 
-    campo para saber si se elimina inmediatamente o hasta la expiracion, esto por que puede que haya documentos que se guarden por mas tiempo.
-
-2. se debe generar una url
-2.1. la url va a tener el idAleatorio 
-2.2. en cuanto se sirva el documento, se debe eliminar el documento (dependiendo de como este en bd) 
-
-
-3. Implementacion de webHooks
-
-
-4. ***cron Job para eliminar info de los documentos y los mismos documentos
 
 
 
-*** implementar  cron job para eliminar los tokens expirados
-npm install node-cron
+
 
 Implementa un proceso de limpieza automático (Cron Job) que elimine cuentas que tengan más de 7 días creadas y sigan con is_verified: false. Esto mantiene tu base de datos limpia y eficiente.
 
-
-
-
-1. cooldown de 2 minutos
-1.1. Condultar la bd con el registro mas reciente de ese user_id con tipo password_recovery, el tiempo de expiracion debe ser 15/20 minutos
-1.2. Si se pide un nuevo token antes de que expire el anterior, se debe bloquear la peticion y retornar al front un mensaje diciendo que el usuario debe esperar 2 minutos para solicitar un nuevo token
-
-2. Usuario 
-2.2. si el conteo de tokens en las ultimas 24 horas supera los 10 por ejemplo, se hace un update al usuario y se bloquea por 24 horas y se disapara un correo con alerta de seguridad
-
-
-4. Cambio de contraseña
-4.1. Cuando el usuario cambia su contraseña, se debe eliminar el token de la tabla user_auth_tokens
-
-
-
-
-
-
-
-ENVIO DE CORREOS ELECTRONICOS   
-https://www.brevo.com/es/pricing/
-BREVO!!!
-
-Checar RABBITMQ!!!!!
-
-SEGURIDAD!!!
-1. Validar el tamaño del documento que se va a recibir tanto el html, css y json
 
 
 
